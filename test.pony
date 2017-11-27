@@ -33,5 +33,6 @@ class iso _OneByteU32 is UnitTest
 		let bytes: Array[U8] val = [0b11000001; 0x42]
 
 		let undertest = Parser(bytes)
-		h.assert_eq[U32](undertest.read[U32](0), 66)
+		let result = undertest.read[U32](0)
+		h.assert_eq[U32](result, 66)
 

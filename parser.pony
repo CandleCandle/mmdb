@@ -1,4 +1,5 @@
 
+type DbType is ( U16 | U32 )
 
 class val Parser
 	let data: Array[U8] val
@@ -6,11 +7,12 @@ class val Parser
 	new create(data': Array[U8] val) =>
 		data = data'
 
-	fun read[T: (U16 | U32)](offset: USize): T =>
+	fun read[T: DbType](offset: USize): T =>
 		try
 			let initial: U8 = data(offset)?
+			let t: U8 = (initial and 0b11100000) >> 5
+			var result: T = T.from[U8](0)
 			let length: U8 = initial and 0b00011111
-			var result: T = 0
 			var count: USize = 0
 			while count < length.usize() do
 				@printf[None]("initial: %d (%X)\n".cstring(), initial, initial)
@@ -18,12 +20,12 @@ class val Parser
 				@printf[None]("count:   %d\n".cstring(), count)
 				@printf[None]("result:  %d (%X)\n".cstring(), result, result)
 
-				let shift: U8 = 8*(length - 1 - count.u8())
-				let data_byte: U8 = data(offset + 1 + count)?
+				let shift: U8 = 8*(length - 1 - count.u8()) // -1: length-to-index
+				let data_byte: U8 = data(offset + 1 + count)? // +1: 1 metadata byte
 				@printf[None]("shift:   %d\n".cstring(), shift)
 				@printf[None]("data:    %d (%X)\n".cstring(), data_byte, data_byte)
 
-				result = result or (data_byte << shift.u8()).u16()
+				result = result or (T.from[U8](data_byte) << shift)
 				count = count + 1
 			end
 			result
