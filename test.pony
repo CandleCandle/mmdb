@@ -17,15 +17,15 @@ class iso _OneByteU16 is UnitTest
 		let bytes: Array[U8] val = [0b10100001; 0x2A]
 
 		let undertest = Parser(bytes)
-		h.assert_eq[U16](undertest.read[U16](0), 42)
+		h.assert_eq[U16](undertest.read_u16(0), 42)
 
 class iso _TwoByteU16 is UnitTest
 	fun name(): String => "parse/field/u16/2-byte"
 	fun apply(h: TestHelper) =>
-		let bytes: Array[U8] val = [0b10100010; 0x00; 0x42]
+		let bytes: Array[U8] val = [0b10100010; 0x42; 0x42]
 
 		let undertest = Parser(bytes)
-		h.assert_eq[U16](undertest.read[U16](0), 66)
+		h.assert_eq[U16](undertest.read_u16(0), 16962)
 
 class iso _OneByteU32 is UnitTest
 	fun name(): String => "parse/field/u32/1-byte"
@@ -33,6 +33,6 @@ class iso _OneByteU32 is UnitTest
 		let bytes: Array[U8] val = [0b11000001; 0x42]
 
 		let undertest = Parser(bytes)
-		let result = undertest.read[U32](0)
+		let result = undertest.read_u32(0)
 		h.assert_eq[U32](result, 66)
 
