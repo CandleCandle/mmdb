@@ -27,7 +27,7 @@ class iso _U16Tests is UnitTest
 	fun name(): String => _name
 	fun apply(h: TestHelper) =>
 		let undertest = Parser(_input)
-		h.assert_eq[U16](undertest.read_u16(0), _result)
+		h.assert_eq[U16](undertest.read[U16](0), _result)
 
 class iso _U32Tests is UnitTest
 	let _name: String val
