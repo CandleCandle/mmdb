@@ -22,7 +22,7 @@ class val Parser
 				@printf[None]("count:   %d\n".cstring(), count)
 				@printf[None]("result:  %d (%X)\n".cstring(), result, result)
 
-				let shift: U16 = 8*(length - 1 - count.u8()) // -1: length-to-index
+				let shift: U16 = 8*(length.u16() - 1 - count.u16()) // -1: length-to-index
 				let data_byte: U8 = data(offset + 1 + count)? // +1: 1 metadata byte
 				@printf[None]("shift:   %d\n".cstring(), shift)
 				@printf[None]("data:    %d (%X)\n".cstring(), data_byte, data_byte)
