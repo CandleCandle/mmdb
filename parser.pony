@@ -53,9 +53,17 @@ class val Parser
 			let metadata_bytes = _metadata_bytes(offset)
 			// magic extension bytes.
 			match length
-			| 29 => data(offset + metadata_bytes)?.usize() + 29
-			| 30 => (data(offset + metadata_bytes)?.usize().shl(8) or data(offset + metadata_bytes + 1)?.usize()) + 285
-			| 31 => ((data(offset + metadata_bytes)?.usize().shl(16) or data(offset + metadata_bytes + 1)?.usize().shl(8)) or data(offset + metadata_bytes + 2)?.usize()) + 65821
+			| 29 => 29
+					+ data(offset + metadata_bytes)?.usize()
+			| 30 => 285
+					+ (    data(offset + metadata_bytes + 1)?.usize()
+						or data(offset + metadata_bytes    )?.usize().shl(8)
+					)
+			| 31 => 65821
+					+ (    data(offset + metadata_bytes + 2)?.usize()
+						or data(offset + metadata_bytes + 1)?.usize().shl(8)
+						or data(offset + metadata_bytes    )?.usize().shl(16)
+					)
 			else
 				length
 			end
