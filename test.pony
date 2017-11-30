@@ -19,8 +19,18 @@ actor Main is TestList
 		test(_UTF8StringTests("parse/field/string/1-byte", "a", [0b01000001; 0x61]))
 		test(_UTF8StringTests("parse/field/string/9-byte", "012345678", [0b01001001; 0x30; 0x31; 0x32; 0x33; 0x34; 0x35; 0x36; 0x37; 0x38]))
 		test(_MetadataBytes("parse/metadata/metadata/1-byte", 1, [0b01000001]))
-		test(_MetadataBytes("parse/metadata/metadata/2-byte", 2, [0b00000000, 0b00000011]))
-		test(_UTF8StringTests("parse/field/string/42-byte", "0123456789abcdefghijABCDEFGHIJklmnopqrstKL", [0b01011101; 0b00001101; 0x30; 0x31; 0x32; 0x33; 0x34; 0x35; 0x36; 0x37; 0x38; 0x39; 0x61; 0x62; 0x63; 0x64; 0x65; 0x66; 0x67; 0x68; 0x69; 0x6a; 0x41; 0x42; 0x43; 0x44; 0x45; 0x46; 0x47; 0x48; 0x49; 0x4a; 0x6b; 0x6c; 0x6d; 0x6e; 0x6f; 0x70; 0x71; 0x72; 0x73; 0x74; 0x4b]))
+		test(_MetadataBytes("parse/metadata/metadata/2-byte", 2, [0b00000000; 0b00000011]))
+		test(_LengthBytes("parse/metadata/length/0-byte", 0, [0b01000000]))
+		test(_LengthBytes("parse/metadata/length/1-byte", 0, [0b01011000]))
+		test(_LengthBytes("parse/metadata/length/2-byte", 1, [0b01011101; 0b00000011]))
+		test(_LengthBytes("parse/metadata/length/3-byte", 2, [0b01011110; 0b00000011; 0b00000011]))
+		test(_LengthBytes("parse/metadata/length/4-byte", 3, [0b01011111; 0b00000011; 0b00000011; 0b00000011]))
+		test(_DataLength("parse/metadata/data length/0-byte", 0, [0b01000000]))
+		test(_DataLength("parse/metadata/data length/1-byte", 24, [0b01011000]))
+		test(_DataLength("parse/metadata/data length/2-byte", 32, [0b01011101; 0b00000011]))
+		test(_DataLength("parse/metadata/data length/3-byte", 1056, [0b01011110; 0b00000011; 0b00000011]))
+		test(_DataLength("parse/metadata/data length/4-byte", 263200, [0b01011111; 0b00000011; 0b00000011; 0b00000011]))
+		test(_UTF8StringTests("parse/field/string/42-byte", "0123456789abcdefghijABCDEFGHIJklmnopqrstKL", [0b01011101; 0b00001101; 0x30; 0x31; 0x32; 0x33; 0x34; 0x35; 0x36; 0x37; 0x38; 0x39; 0x61; 0x62; 0x63; 0x64; 0x65; 0x66; 0x67; 0x68; 0x69; 0x6a; 0x41; 0x42; 0x43; 0x44; 0x45; 0x46; 0x47; 0x48; 0x49; 0x4a; 0x6b; 0x6c; 0x6d; 0x6e; 0x6f; 0x70; 0x71; 0x72; 0x73; 0x74; 0x4b; 0x4c]))
 
 class iso _UnsignedTests[T: (_Shiftable[T] & Integer[T] & Unsigned val)] is UnitTest
 	let _name: String val
@@ -43,6 +53,7 @@ class iso _UTF8StringTests is UnitTest
 		_name = name'
 		_input = input'
 		_result = result'
+		@printf[None]("total input length: %d\n".cstring(), _input.size())
 	fun name(): String => _name
 	fun apply(h: TestHelper) =>
 		let undertest = Parser(_input)
@@ -61,4 +72,29 @@ class iso _MetadataBytes is UnitTest
 		let undertest = Parser(_input)
 		h.assert_eq[USize](undertest._metadata_bytes(0), _result)
 
+class iso _LengthBytes is UnitTest
+	let _name: String val
+	let _input: Array[U8] val
+	let _result: USize
+	new iso create(name': String, result': USize, input': Array[U8] val) =>
+		_name = name'
+		_input = input'
+		_result = result'
+	fun name(): String => _name
+	fun apply(h: TestHelper) =>
+		let undertest = Parser(_input)
+		h.assert_eq[USize](undertest._length_bytes(0), _result)
+
+class iso _DataLength is UnitTest
+	let _name: String val
+	let _input: Array[U8] val
+	let _result: USize
+	new iso create(name': String, result': USize, input': Array[U8] val) =>
+		_name = name'
+		_input = input'
+		_result = result'
+	fun name(): String => _name
+	fun apply(h: TestHelper) =>
+		let undertest = Parser(_input)
+		h.assert_eq[USize](undertest._length(0), _result)
 
