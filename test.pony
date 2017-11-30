@@ -12,9 +12,8 @@ actor Main is TestList
 		test(_U32Tests("parse/field/u32/2-byte", 36878, [0b11000010; 0x90; 0x0E]))
 		test(_U32Tests("parse/field/u32/3-byte", 8522552, [0b11000011; 0x82; 0x0b; 0x38]))
 		test(_U32Tests("parse/field/u32/4-byte", 1563489448, [0b11000100; 0x5d; 0x30; 0xf4; 0xa8]))
-//		test(_TwoByteU32)
-//		test(_ThreeByteU32)
-//		test(_FourByteU32)
+		test(_U64Tests("parse/field/u64/1-byte", 55, [0b00000001; 0b00000010; 0x37]))
+		test(_U128Tests("parse/field/u128/1-byte", 56, [0b00000001; 0b00000011; 0x38]))
 
 class iso _U16Tests is UnitTest
 	let _name: String val
@@ -40,5 +39,32 @@ class iso _U32Tests is UnitTest
 	fun name(): String => _name
 	fun apply(h: TestHelper) =>
 		let undertest = Parser(_input)
-		h.assert_eq[U32](undertest.read_u32(0), _result)
+		h.assert_eq[U32](undertest.read[U32](0), _result)
+
+class iso _U64Tests is UnitTest
+	let _name: String val
+	let _input: Array[U8] val
+	let _result: U64
+	new iso create(name': String, result': U64, input': Array[U8] val) =>
+		_name = name'
+		_input = input'
+		_result = result'
+	fun name(): String => _name
+	fun apply(h: TestHelper) =>
+		let undertest = Parser(_input)
+		h.assert_eq[U64](undertest.read[U64](0), _result)
+
+class iso _U128Tests is UnitTest
+	let _name: String val
+	let _input: Array[U8] val
+	let _result: U128
+	new iso create(name': String, result': U128, input': Array[U8] val) =>
+		_name = name'
+		_input = input'
+		_result = result'
+	fun name(): String => _name
+	fun apply(h: TestHelper) =>
+		let undertest = Parser(_input)
+		h.assert_eq[U128](undertest.read[U128](0), _result)
+
 
