@@ -10,7 +10,7 @@ class val Parser
 	new create(data': Array[U8] val) =>
 		data = data'
 
-	fun read[T: (_Shiftable[T] & Integer[T] & Unsigned val)](offset: USize): T =>
+	fun read_unsigned[T: (_Shiftable[T] & Integer[T] & Unsigned val)](offset: USize): T =>
 		try
 			let initial: U8 = data(offset)?
 			var result: T = T.from[U8](0)

@@ -26,6 +26,6 @@ class iso _UnsignedTests[T: (_Shiftable[T] & Integer[T] & Unsigned val)] is Unit
 	fun name(): String => _name
 	fun apply(h: TestHelper) =>
 		let undertest = Parser(_input)
-		h.assert_eq[T](undertest.read[T](0), _result)
+		h.assert_eq[T](undertest.read_unsigned[T](0), _result)
 
 
