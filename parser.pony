@@ -1,4 +1,7 @@
+use "collections"
 
+type Field is ( U16 | U32 | U64 | U128 | I32 | String | F32 | F64 )
+// pointer, array, map, byte array, data cache container, boolean
 
 interface _Shiftable[T]
 	fun shl(y: T): T
@@ -45,6 +48,23 @@ class val Parser
 		else
 			""
 		end
+
+	fun read_map(offset: USize): Map[String val, Field val] val =>
+//		try
+			let total_pairs = _length(offset)
+			recover val
+				var result = Map[String, Field]
+				var counter: USize = 0
+				while counter < total_pairs do
+					// TODO not cheat.
+					result("a") = "b"
+					counter = counter + 1
+				end
+				consume result
+			end
+//		else
+//			recover val Map[String, Field] end
+//		end
 
 	fun _length(offset: USize): USize =>
 		try

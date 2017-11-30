@@ -1,3 +1,4 @@
+use "collections"
 use "ponytest"
 
 actor Main is TestList
@@ -31,6 +32,8 @@ actor Main is TestList
 		test(_DataLength("parse/metadata/data length/3-byte", 1056, [0b01011110; 0b00000011; 0b00000011]))
 		test(_DataLength("parse/metadata/data length/4-byte", 263200, [0b01011111; 0b00000011; 0b00000011; 0b00000011]))
 		test(_UTF8StringTests("parse/field/string/42-byte", "0123456789abcdefghijABCDEFGHIJklmnopqrstKL", [0b01011101; 0b00001101; 0x30; 0x31; 0x32; 0x33; 0x34; 0x35; 0x36; 0x37; 0x38; 0x39; 0x61; 0x62; 0x63; 0x64; 0x65; 0x66; 0x67; 0x68; 0x69; 0x6a; 0x41; 0x42; 0x43; 0x44; 0x45; 0x46; 0x47; 0x48; 0x49; 0x4a; 0x6b; 0x6c; 0x6d; 0x6e; 0x6f; 0x70; 0x71; 0x72; 0x73; 0x74; 0x4b; 0x4c]))
+		test(_MapZeroTest)
+		test(_MapOneTest)
 
 class iso _UnsignedTests[T: (_Shiftable[T] & Integer[T] & Unsigned val)] is UnitTest
 	let _name: String val
@@ -97,4 +100,26 @@ class iso _DataLength is UnitTest
 	fun apply(h: TestHelper) =>
 		let undertest = Parser(_input)
 		h.assert_eq[USize](undertest._length(0), _result)
+
+class iso _MapZeroTest is UnitTest
+	fun name(): String => "parse/field/map/0-element"
+	fun apply(h: TestHelper) =>
+		let undertest = Parser([0b11100000])
+		h.assert_eq[USize](undertest.read_map(0).size(), 0)
+
+class iso _MapOneTest is UnitTest
+	fun name(): String => "parse/field/map/1-element"
+	fun apply(h: TestHelper) =>
+		let undertest = Parser([0b11100001; 0b01000001; 0x61; 0b01000001; 0x62])
+		let result: Map[String val, Field val] val = undertest.read_map(0)
+		h.assert_eq[USize](result.size(), 1)
+		try
+			let value: String = match result.apply("a")?
+				| let s: String => s
+				else "error" end
+			h.assert_eq[String](value, "b")
+		else
+			h.fail("no key 'a'")
+		end
+
 
