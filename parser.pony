@@ -52,12 +52,25 @@ class val Parser
 	fun read_map(offset: USize): Map[String val, Field val] val =>
 //		try
 			let total_pairs = _length(offset)
+			@printf[None]("expecting: %d entr{y,ies}\n".cstring(), total_pairs)
 			recover val
 				var result = Map[String, Field]
 				var counter: USize = 0
+				var running_offset = offset + _metadata_bytes(offset) + _length_bytes(offset)
+				@printf[None]("new offset: %d\n".cstring(), running_offset)
 				while counter < total_pairs do
-					// TODO not cheat.
-					result("a") = "b"
+					let key: String = read_string(running_offset)
+					running_offset = _update_offset(running_offset)
+					@printf[None]("new offset: %d\n".cstring(), running_offset)
+					let value: Field = read_string(running_offset) // TODO discover the type and delegate to the correct read* function
+					running_offset = _update_offset(running_offset)
+					@printf[None]("new offset: %d\n".cstring(), running_offset)
+
+					result(key) = value
+					match value
+					| let s: String => @printf[None]("new key: %s, new value: %s, new offset: %d\n".cstring(), key.cstring(), s.cstring(), running_offset)
+					| let u: Unsigned => @printf[None]("new key: %s, new value: %d, new offset: %d\n".cstring(), key.cstring(), u, running_offset)
+					end
 					counter = counter + 1
 				end
 				consume result
@@ -65,6 +78,12 @@ class val Parser
 //		else
 //			recover val Map[String, Field] end
 //		end
+
+	fun _update_offset(initial_offset: USize): USize =>
+		initial_offset
+		  + _metadata_bytes(initial_offset)
+		  + _length_bytes(initial_offset)
+		  + _length(initial_offset)
 
 	fun _length(offset: USize): USize =>
 		try
