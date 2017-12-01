@@ -62,7 +62,7 @@ class val Parser
 					let key: String = read_string(running_offset)
 					running_offset = _update_offset(running_offset)
 					@printf[None]("new offset: %d\n".cstring(), running_offset)
-					let value: Field = read_string(running_offset) // TODO discover the type and delegate to the correct read* function
+					let value: Field = read_field(running_offset)
 					running_offset = _update_offset(running_offset)
 					@printf[None]("new offset: %d\n".cstring(), running_offset)
 
@@ -78,6 +78,31 @@ class val Parser
 //		else
 //			recover val Map[String, Field] end
 //		end
+
+	fun read_field(offset: USize): Field =>
+		match _get_type(offset)
+		| 2 => read_string(offset)
+		| 5 => read_unsigned[U16](offset)
+		| 6 => read_unsigned[U32](offset)
+		| 7 => read_unsigned[U16](offset)
+		| 9 => read_unsigned[U64](offset)
+		| 10 => read_unsigned[U128](offset)
+		else
+			U16.from[U8](0)
+		end
+
+	fun _get_type(offset: USize): U16 =>
+		try
+			let t: U8 = (data(offset)? and 0b11100000) >> 5
+			match t
+			| 0 =>
+				7 + data(offset + 1)?.u16()
+			else
+				t.u16()
+			end
+		else
+			0
+		end
 
 	fun _update_offset(initial_offset: USize): USize =>
 		initial_offset

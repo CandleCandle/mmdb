@@ -35,6 +35,12 @@ actor Main is TestList
 		test(_MapZeroTest)
 		test(_MapOneTest)
 		test(_MapTwoTest)
+		test(_MapTwoMixedContentTest)
+		test(_DataType("parse/metadata/type/u16", 5, [0b10100000]))
+		test(_DataType("parse/metadata/type/u32", 6, [0b11000000]))
+		test(_DataType("parse/metadata/type/i32", 8, [0b0; 0b1]))
+		test(_DataType("parse/metadata/type/u64", 9, [0b0; 0b10]))
+		test(_DataType("parse/metadata/type/u128", 10, [0b0; 0b11]))
 
 class iso _UnsignedTests[T: (_Shiftable[T] & Integer[T] & Unsigned val)] is UnitTest
 	let _name: String val
@@ -102,6 +108,19 @@ class iso _DataLength is UnitTest
 		let undertest = Parser(_input)
 		h.assert_eq[USize](undertest._length(0), _result)
 
+class iso _DataType is UnitTest
+	let _name: String val
+	let _input: Array[U8] val
+	let _result: U16
+	new iso create(name': String, result': U16, input': Array[U8] val) =>
+		_name = name'
+		_input = input'
+		_result = result'
+	fun name(): String => _name
+	fun apply(h: TestHelper) =>
+		let undertest = Parser(_input)
+		h.assert_eq[U16](undertest._get_type(0), _result)
+
 class iso _MapZeroTest is UnitTest
 	fun name(): String => "parse/field/map/0-element"
 	fun apply(h: TestHelper) =>
@@ -146,4 +165,26 @@ class iso _MapTwoTest is UnitTest
 			h.fail("no key 'b'")
 		end
 
+class iso _MapTwoMixedContentTest is UnitTest
+	fun name(): String => "parse/field/map/2-element/mixed-content"
+	fun apply(h: TestHelper) =>
+		let undertest = Parser([0b11100010; 0b01000001; 0x61; 0b01000001; 0x62; 0b01000001; 0x62; 0b10100001; 0x2A])
+		let result: Map[String val, Field val] val = undertest.read_map(0)
+		h.assert_eq[USize](result.size(), 2)
+		try
+			let value: String = match result.apply("a")?
+				| let s: String => s
+				else "error" end
+			h.assert_eq[String](value, "b")
+		else
+			h.fail("no key 'a'")
+		end
+		try
+			let value: U16 = match result.apply("b")?
+				| let s: U16 => s
+				else 0xFFFF end
+			h.assert_eq[U16](value, 42)
+		else
+			h.fail("no key 'b'")
+		end
 
