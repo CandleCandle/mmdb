@@ -36,6 +36,7 @@ actor Main is TestList
 		test(_MapOneTest)
 		test(_MapTwoTest)
 		test(_MapTwoMixedContentTest)
+		test(_DataType("parse/metadata/type/string", 2, [0b01000000]))
 		test(_DataType("parse/metadata/type/u16", 5, [0b10100000]))
 		test(_DataType("parse/metadata/type/u32", 6, [0b11000000]))
 		test(_DataType("parse/metadata/type/i32", 8, [0b0; 0b1]))
