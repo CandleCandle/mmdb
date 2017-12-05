@@ -1,4 +1,3 @@
-use ".."
 use "collections"
 use "ponytest"
 
