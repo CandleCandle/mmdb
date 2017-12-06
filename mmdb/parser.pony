@@ -1,11 +1,17 @@
 use "collections"
 
-type Field is ( U16 | U32 | U64 | U128 | I32 | String | F32 | F64 )
-// pointer, array, map, byte array, data cache container, boolean
+type SimpleField is ( U16 | U32 | U64 | U128 | I32 | String | F32 | F64 )
+type Field is ( SimpleField | MmdbMap )
+// pointer, array, byte array, data cache container, boolean
 
 interface _Shiftable[T]
 	fun shl(y: T): T
 	fun shr(y: T): T
+
+class val MmdbMap
+	let data: Map[String val, Field val] val
+	new val create(data': Map[String val, Field val] val) =>
+		data = data'
 
 class val Parser
 	let data: Array[U8] val
@@ -49,11 +55,11 @@ class val Parser
 			""
 		end
 
-	fun read_map(offset: USize): Map[String val, Field val] val =>
+	fun read_map(offset: USize): MmdbMap =>
 //		try
 			let total_pairs = _length(offset)
 			@printf[None]("expecting: %d entr{y,ies}\n".cstring(), total_pairs)
-			recover val
+			let result: Map[String val, Field val] val = recover val
 				var result = Map[String, Field]
 				var counter: USize = 0
 				var running_offset = offset + _metadata_bytes(offset) + _length_bytes(offset)
@@ -75,18 +81,27 @@ class val Parser
 				end
 				consume result
 			end
+			MmdbMap(result)
 //		else
 //			recover val Map[String, Field] end
 //		end
 
 	fun read_field(offset: USize): Field =>
 		match _get_type(offset)
+		// | 0 marker for data type extension
+		// | 1 => pointer
 		| 2 => read_string(offset)
+		// | 3 => F64
+		// | 4 => byte array
 		| 5 => read_unsigned[U16](offset)
 		| 6 => read_unsigned[U32](offset)
-		| 7 => read_unsigned[U16](offset)
+		| 7 => read_map(offset)
+		// | 8 => I32
 		| 9 => read_unsigned[U64](offset)
 		| 10 => read_unsigned[U128](offset)
+		// | 11 => array
+		// | 12 => data cache container
+		// | 13 => end marker
 		else
 			U16.from[U8](0)
 		end

@@ -42,6 +42,7 @@ actor Main is TestList
 		test(_DataType("parse/metadata/type/i32", 8, [0b0; 0b1]))
 		test(_DataType("parse/metadata/type/u64", 9, [0b0; 0b10]))
 		test(_DataType("parse/metadata/type/u128", 10, [0b0; 0b11]))
+		test(_MapWithinMapTest)
 
 class iso _UnsignedTests[T: (_Shiftable[T] & Integer[T] & Unsigned val)] is UnitTest
 	let _name: String val
@@ -126,13 +127,13 @@ class iso _MapZeroTest is UnitTest
 	fun name(): String => "parse/field/map/0-element"
 	fun apply(h: TestHelper) =>
 		let undertest = Parser([0b11100000])
-		h.assert_eq[USize](undertest.read_map(0).size(), 0)
+		h.assert_eq[USize](undertest.read_map(0).data.size(), 0)
 
 class iso _MapOneTest is UnitTest
 	fun name(): String => "parse/field/map/1-element"
 	fun apply(h: TestHelper) =>
 		let undertest = Parser([0b11100001; 0b01000001; 0x61; 0b01000001; 0x62])
-		let result: Map[String val, Field val] val = undertest.read_map(0)
+		let result: Map[String val, Field val] val = undertest.read_map(0).data
 		h.assert_eq[USize](result.size(), 1)
 		try
 			let value: String = match result.apply("a")?
@@ -147,7 +148,7 @@ class iso _MapTwoTest is UnitTest
 	fun name(): String => "parse/field/map/2-element"
 	fun apply(h: TestHelper) =>
 		let undertest = Parser([0b11100010; 0b01000001; 0x61; 0b01000001; 0x62; 0b01000001; 0x62; 0b01000001; 0x63])
-		let result: Map[String val, Field val] val = undertest.read_map(0)
+		let result: Map[String val, Field val] val = undertest.read_map(0).data
 		h.assert_eq[USize](result.size(), 2)
 		try
 			let value: String = match result.apply("a")?
@@ -170,7 +171,7 @@ class iso _MapTwoMixedContentTest is UnitTest
 	fun name(): String => "parse/field/map/2-element/mixed-content"
 	fun apply(h: TestHelper) =>
 		let undertest = Parser([0b11100010; 0b01000001; 0x61; 0b01000001; 0x62; 0b01000001; 0x62; 0b10100001; 0x2A])
-		let result: Map[String val, Field val] val = undertest.read_map(0)
+		let result: Map[String val, Field val] val = undertest.read_map(0).data
 		h.assert_eq[USize](result.size(), 2)
 		try
 			let value: String = match result.apply("a")?
@@ -185,6 +186,34 @@ class iso _MapTwoMixedContentTest is UnitTest
 				| let s: U16 => s
 				else 0xFFFF end
 			h.assert_eq[U16](value, 42)
+		else
+			h.fail("no key 'b'")
+		end
+
+class iso _MapWithinMapTest is UnitTest
+	fun name(): String => "parse/field/map/2-element/nested-map"
+	fun apply(h: TestHelper) =>
+		let undertest = Parser([0b11100010; 0b01000001; 0x61; 0b01000001; 0x62; 0b01000001; 0x62; 0b11100001; 0b01000001; 0x63; 0b10100001; 0x2A])
+		let result: Map[String val, Field val] val = undertest.read_map(0).data
+		h.assert_eq[USize](result.size(), 2)
+		try
+			let value: String = match result.apply("a")?
+				| let s: String => s
+				else "error" end
+			h.assert_eq[String](value, "b")
+		else
+			h.fail("no key 'a'")
+		end
+		try
+			let value_a: Map[String val, Field val] val = match result.apply("b")?
+				| let m: MmdbMap => m.data
+				else recover val Map[String, Field] end end
+
+			h.assert_eq[USize](value_a.size(), 1)
+			let value_b: U16 = match value_a.apply("c")?
+				| let u: U16 => u
+				else 0xFFFF end
+			h.assert_eq[U16](value_b, 42)
 		else
 			h.fail("no key 'b'")
 		end
