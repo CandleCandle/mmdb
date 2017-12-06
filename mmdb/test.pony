@@ -1,20 +1,39 @@
 use "collections"
 use "ponytest"
+use "format"
+
+primitive _DataDump
+	fun val apply(arr: Array[U8] val): String val =>
+		recover val
+			try
+				var result: String ref = String.create(10)
+				result.append("[")
+				let iter = arr.values()
+				while iter.has_next() do
+					result.append(Format.int[U8](iter.next()? where fmt=FormatBinary))
+					if iter.has_next() then result.append("; ") end
+				end
+				result.append("]")
+				consume result
+			else
+				"err"
+			end
+		end
 
 actor Main is TestList
 	new create(env: Env) => PonyTest(env, this)
 	new make() => None
 	fun tag tests(test: PonyTest) =>
-		test(_UnsignedTests[U16]("parse/field/u16/0-byte", 0, [0b10100000; 0x99]))
-		test(_UnsignedTests[U16]("parse/field/u16/1-byte", 42, [0b10100001; 0x2A]))
-		test(_UnsignedTests[U16]("parse/field/u16/2-byte", 16962, [0b10100010; 0x42; 0x42]))
-		test(_UnsignedTests[U32]("parse/field/u32/0-byte", 0, [0b11000000; 0x99]))
-		test(_UnsignedTests[U32]("parse/field/u32/1-byte", 66, [0b11000001; 0x42]))
-		test(_UnsignedTests[U32]("parse/field/u32/2-byte", 36878, [0b11000010; 0x90; 0x0E]))
-		test(_UnsignedTests[U32]("parse/field/u32/3-byte", 8522552, [0b11000011; 0x82; 0x0b; 0x38]))
-		test(_UnsignedTests[U32]("parse/field/u32/4-byte", 1563489448, [0b11000100; 0x5d; 0x30; 0xf4; 0xa8]))
-		test(_UnsignedTests[U64]("parse/field/u64/1-byte", 55, [0b00000001; 0b00000010; 0x37]))
-		test(_UnsignedTests[U128]("parse/field/u128/1-byte", 56, [0b00000001; 0b00000011; 0x38]))
+		test(_UnsignedTests[U16]("parse/field/u16/0-byte", 0, 1, [0b10100000; 0x99]))
+		test(_UnsignedTests[U16]("parse/field/u16/1-byte", 42, 2, [0b10100001; 0x2A]))
+		test(_UnsignedTests[U16]("parse/field/u16/2-byte", 16962, 3, [0b10100010; 0x42; 0x42]))
+		test(_UnsignedTests[U32]("parse/field/u32/0-byte", 0, 1, [0b11000000; 0x99]))
+		test(_UnsignedTests[U32]("parse/field/u32/1-byte", 66, 2, [0b11000001; 0x42]))
+		test(_UnsignedTests[U32]("parse/field/u32/2-byte", 36878, 3, [0b11000010; 0x90; 0x0E]))
+		test(_UnsignedTests[U32]("parse/field/u32/3-byte", 8522552, 4, [0b11000011; 0x82; 0x0b; 0x38]))
+		test(_UnsignedTests[U32]("parse/field/u32/4-byte", 1563489448, 5, [0b11000100; 0x5d; 0x30; 0xf4; 0xa8]))
+		test(_UnsignedTests[U64]("parse/field/u64/1-byte", 55, 3, [0b00000001; 0b00000010; 0x37]))
+		test(_UnsignedTests[U128]("parse/field/u128/1-byte", 56, 3, [0b00000001; 0b00000011; 0x38]))
 
 		test(_UTF8StringTests("parse/field/string/0-byte", "", [0b01000000]))
 		test(_UTF8StringTests("parse/field/string/1-byte", "a", [0b01000001; 0x61]))
@@ -48,14 +67,17 @@ class iso _UnsignedTests[T: (_Shiftable[T] & Integer[T] & Unsigned val)] is Unit
 	let _name: String val
 	let _input: Array[U8] val
 	let _result: T
-	new iso create(name': String, result': T, input': Array[U8] val) =>
+	let _length: USize
+	new iso create(name': String, result': T, length': USize, input': Array[U8] val) =>
 		_name = name'
 		_input = input'
 		_result = result'
+		_length = length'
 	fun name(): String => _name
 	fun apply(h: TestHelper) =>
 		let undertest = Parser(_input)
-		h.assert_eq[T](undertest.read_unsigned[T](0), _result)
+		h.assert_eq[USize](undertest.read_unsigned[USize](0)._1, _length)
+		h.assert_eq[T](undertest.read_unsigned[T](0)._2, _result)
 
 class iso _UTF8StringTests is UnitTest
 	let _name: String val
@@ -69,7 +91,7 @@ class iso _UTF8StringTests is UnitTest
 	fun name(): String => _name
 	fun apply(h: TestHelper) =>
 		let undertest = Parser(_input)
-		h.assert_eq[String](undertest.read_string(0), _result)
+		h.assert_eq[String](undertest.read_string(0)._2, _result)
 
 class iso _MetadataBytes is UnitTest
 	let _name: String val
@@ -126,14 +148,18 @@ class iso _DataType is UnitTest
 class iso _MapZeroTest is UnitTest
 	fun name(): String => "parse/field/map/0-element"
 	fun apply(h: TestHelper) =>
+		let arr: Array[U8] val = [0b11100000]
+		@printf[None]("length: %d %s\n".cstring(), arr.size(), _DataDump(arr).cstring())
 		let undertest = Parser([0b11100000])
-		h.assert_eq[USize](undertest.read_map(0).data.size(), 0)
+		h.assert_eq[USize](undertest.read_map(0)._2.data.size(), 0)
 
 class iso _MapOneTest is UnitTest
 	fun name(): String => "parse/field/map/1-element"
 	fun apply(h: TestHelper) =>
-		let undertest = Parser([0b11100001; 0b01000001; 0x61; 0b01000001; 0x62])
-		let result: Map[String val, Field val] val = undertest.read_map(0).data
+		let arr: Array[U8] val = [0b11100001; 0b01000001; 0x61; 0b01000001; 0x62]
+		@printf[None]("length: %d %s\n".cstring(), arr.size(), _DataDump(arr).cstring())
+		let undertest = Parser(arr)
+		let result: Map[String val, Field val] val = undertest.read_map(0)._2.data
 		h.assert_eq[USize](result.size(), 1)
 		try
 			let value: String = match result.apply("a")?
@@ -147,8 +173,10 @@ class iso _MapOneTest is UnitTest
 class iso _MapTwoTest is UnitTest
 	fun name(): String => "parse/field/map/2-element"
 	fun apply(h: TestHelper) =>
-		let undertest = Parser([0b11100010; 0b01000001; 0x61; 0b01000001; 0x62; 0b01000001; 0x62; 0b01000001; 0x63])
-		let result: Map[String val, Field val] val = undertest.read_map(0).data
+		let arr: Array[U8] val = [0b11100010; 0b01000001; 0x61; 0b01000001; 0x62; 0b01000001; 0x62; 0b01000001; 0x63]
+		@printf[None]("length: %d %s\n".cstring(), arr.size(), _DataDump(arr).cstring())
+		let undertest = Parser(arr)
+		let result: Map[String val, Field val] val = undertest.read_map(0)._2.data
 		h.assert_eq[USize](result.size(), 2)
 		try
 			let value: String = match result.apply("a")?
@@ -170,8 +198,10 @@ class iso _MapTwoTest is UnitTest
 class iso _MapTwoMixedContentTest is UnitTest
 	fun name(): String => "parse/field/map/2-element/mixed-content"
 	fun apply(h: TestHelper) =>
-		let undertest = Parser([0b11100010; 0b01000001; 0x61; 0b01000001; 0x62; 0b01000001; 0x62; 0b10100001; 0x2A])
-		let result: Map[String val, Field val] val = undertest.read_map(0).data
+		let arr: Array[U8] val = [0b11100010; 0b01000001; 0x61; 0b01000001; 0x62; 0b01000001; 0x62; 0b10100001; 0x2A]
+		@printf[None]("length: %d %s\n".cstring(), arr.size(), _DataDump(arr).cstring())
+		let undertest = Parser(arr)
+		let result: Map[String val, Field val] val = undertest.read_map(0)._2.data
 		h.assert_eq[USize](result.size(), 2)
 		try
 			let value: String = match result.apply("a")?
@@ -193,8 +223,10 @@ class iso _MapTwoMixedContentTest is UnitTest
 class iso _MapWithinMapTest is UnitTest
 	fun name(): String => "parse/field/map/2-element/nested-map"
 	fun apply(h: TestHelper) =>
-		let undertest = Parser([0b11100010; 0b01000001; 0x61; 0b01000001; 0x62; 0b01000001; 0x62; 0b11100001; 0b01000001; 0x63; 0b10100001; 0x2A])
-		let result: Map[String val, Field val] val = undertest.read_map(0).data
+		let arr: Array[U8] val = [0b11100010; 0b01000001; 0x61; 0b01000001; 0x62; 0b01000001; 0x62; 0b11100001; 0b01000001; 0x63; 0b10100001; 0x2A]
+		@printf[None]("length: %d %s\n".cstring(), arr.size(), _DataDump(arr).cstring())
+		let undertest = Parser(arr)
+		let result: Map[String val, Field val] val = undertest.read_map(0)._2.data
 		h.assert_eq[USize](result.size(), 2)
 		try
 			let value: String = match result.apply("a")?

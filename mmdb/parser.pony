@@ -19,14 +19,14 @@ class val Parser
 	new create(data': Array[U8] val) =>
 		data = data'
 
-	fun read_unsigned[T: (_Shiftable[T] & Integer[T] & Unsigned val)](offset: USize): T =>
+	fun read_unsigned[T: (_Shiftable[T] & Integer[T] & Unsigned val)](offset: USize): (USize, T) =>
 		try
 			let initial: U8 = data(offset)?
 			var result: T = T.from[U8](0)
 			let length: USize = _length(offset)
 			let metadata_bytes = _metadata_bytes(offset)
 			if length == 0 then
-				return T.from[U8](0)
+				return (1, T.from[U8](0))
 			end
 			var count: USize = 0
 			while count < length do
@@ -36,12 +36,12 @@ class val Parser
 				result = result or (T.from[U8](data_byte).shl(shift))
 				count = count + 1
 			end
-			result
+			(metadata_bytes + length, result)
 		else
-			T.from[U8](0)
+			(0, T.from[U8](0))
 		end
 
-	fun read_string(offset: USize): String val =>
+	fun read_string(offset: USize): (USize, String val) =>
 		try
 			let initial: U8 = data(offset)?
 			let length: USize = _length(offset)
@@ -49,44 +49,53 @@ class val Parser
 			let length_bytes = _length_bytes(offset)
 			let start = offset + metadata_bytes + length_bytes
 			let finish = start + length
-			@printf[None]("offset %d; metadata %d, length_bytes %d, length: %d, start %d, finish %d\n".cstring(), offset, metadata_bytes, length_bytes, length, start, finish)
-			String.from_array(recover val data.slice(start, finish) end)
+			@printf[None]("String at: offset %d; metadata %d, length_bytes %d, length: %d, start %d, finish %d\n".cstring(), offset, metadata_bytes, length_bytes, length, start, finish)
+			(finish - offset, String.from_array(recover val data.slice(start, finish) end))
 		else
-			""
+			(0, "")
 		end
 
-	fun read_map(offset: USize): MmdbMap =>
+	fun read_map(offset: USize): (USize, MmdbMap) =>
 //		try
 			let total_pairs = _length(offset)
-			@printf[None]("expecting: %d entr{y,ies}\n".cstring(), total_pairs)
+//			@printf[None]("expecting: %d entr{y,ies}\n".cstring(), total_pairs)
+			var running_offset = offset + _metadata_bytes(offset) + _length_bytes(offset)
 			let result: Map[String val, Field val] val = recover val
 				var result = Map[String, Field]
 				var counter: USize = 0
-				var running_offset = offset + _metadata_bytes(offset) + _length_bytes(offset)
 				@printf[None]("new offset: %d\n".cstring(), running_offset)
 				while counter < total_pairs do
-					let key: String = read_string(running_offset)
-					running_offset = _update_offset(running_offset)
-					@printf[None]("new offset: %d\n".cstring(), running_offset)
-					let value: Field = read_field(running_offset)
-					running_offset = _update_offset(running_offset)
-					@printf[None]("new offset: %d\n".cstring(), running_offset)
+					@printf[None]("map key: offset: %d\n".cstring(), running_offset)
+					(let key_change: USize, let key: String) = read_string(running_offset)
+					running_offset = running_offset + key_change
+					@printf[None]("map value: offset: %d, last change: %d\n".cstring(), running_offset, key_change)
+					(let value_change: USize, let value: Field) = read_field(running_offset)
+					running_offset = running_offset + value_change
+					@printf[None]("map value end: offset: %d, last change: %d\n".cstring(), running_offset, value_change)
 
-					result(key) = value
+					@printf[None]("k: %s\n".cstring(), key.cstring())
 					match value
-					| let s: String => @printf[None]("new key: %s, new value: %s, new offset: %d\n".cstring(), key.cstring(), s.cstring(), running_offset)
-					| let u: Unsigned => @printf[None]("new key: %s, new value: %d, new offset: %d\n".cstring(), key.cstring(), u, running_offset)
+					| let s: String => @printf[None]("v: %s\n".cstring(), s.cstring())
+//					| let u: U16 => @printf[None]("v: ????\n".cstring())
+					else
+						@printf[None]("v: other".cstring())
 					end
+//					match value
+//					| let s: String => @printf[None]("new key: %s, new value: %s, new offset: %d\n".cstring(), key.cstring(), s.cstring(), running_offset)
+//					| let u: Unsigned => @printf[None]("new key: %s, new value: %d, new offset: %d\n".cstring(), key.cstring(), u, running_offset)
+//					end
+
+//					result(key) = value
 					counter = counter + 1
 				end
 				consume result
 			end
-			MmdbMap(result)
+			(0, MmdbMap(result))
+//			(running_offset - offset, MmdbMap(result))
 //		else
 //			recover val Map[String, Field] end
 //		end
-
-	fun read_field(offset: USize): Field =>
+	fun read_field(offset: USize): (USize, Field) =>
 		match _get_type(offset)
 		// | 0 marker for data type extension
 		// | 1 => pointer
@@ -103,7 +112,7 @@ class val Parser
 		// | 12 => data cache container
 		// | 13 => end marker
 		else
-			U16.from[U8](0)
+			(0, U16.from[U8](0))
 		end
 
 	fun _get_type(offset: USize): U16 =>
@@ -118,12 +127,6 @@ class val Parser
 		else
 			0
 		end
-
-	fun _update_offset(initial_offset: USize): USize =>
-		initial_offset
-		  + _metadata_bytes(initial_offset)
-		  + _length_bytes(initial_offset)
-		  + _length(initial_offset)
 
 	fun _length(offset: USize): USize =>
 		try
