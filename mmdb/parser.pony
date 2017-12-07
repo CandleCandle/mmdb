@@ -36,6 +36,7 @@ class val Parser
 				result = result or (T.from[U8](data_byte).shl(shift))
 				count = count + 1
 			end
+			@printf[None]("Uxx result: %d using %d bytes\n".cstring(), result, metadata_bytes + length)
 			(metadata_bytes + length, result)
 		else
 			(0, T.from[U8](0))
@@ -76,16 +77,17 @@ class val Parser
 					@printf[None]("k: %s\n".cstring(), key.cstring())
 					match value
 					| let s: String => @printf[None]("v: %s\n".cstring(), s.cstring())
-//					| let u: U16 => @printf[None]("v: ????\n".cstring())
+					| let u: Unsigned => @printf[None]("v: %d\n".cstring(), u)
+					| let m: MmdbMap => @printf[None]("v: map with %d key(s)\n".cstring(), m.data.size())
 					else
-						@printf[None]("v: other".cstring())
+						@printf[None]("v: other\n".cstring())
 					end
 //					match value
 //					| let s: String => @printf[None]("new key: %s, new value: %s, new offset: %d\n".cstring(), key.cstring(), s.cstring(), running_offset)
 //					| let u: Unsigned => @printf[None]("new key: %s, new value: %d, new offset: %d\n".cstring(), key.cstring(), u, running_offset)
 //					end
 
-//					result(key) = value
+					result(key) = value
 					counter = counter + 1
 				end
 				consume result
@@ -104,7 +106,11 @@ class val Parser
 		// | 4 => byte array
 		| 5 => read_unsigned[U16](offset)
 		| 6 => read_unsigned[U32](offset)
-		| 7 => read_map(offset)
+		| 7 =>
+//			read_map(offset)
+			let res: (USize, Field) = read_map(offset)
+//			@printf[None]("map read using %d bytes\n".cstring(), res._1)
+			res
 		// | 8 => I32
 		| 9 => read_unsigned[U64](offset)
 		| 10 => read_unsigned[U128](offset)
