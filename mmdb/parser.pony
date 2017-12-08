@@ -136,7 +136,7 @@ class val Parser
 		// | 8 => I32
 		| 9 => read_unsigned[U64](offset)
 		| 10 => read_unsigned[U128](offset)
-		// | 11 => array
+		| 11 => read_array(offset)
 		// | 12 => data cache container
 		// | 13 => end marker
 		else
