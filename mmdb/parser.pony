@@ -118,6 +118,7 @@ class val Parser
 		// | 12 => data cache container
 		// | 13 => end marker
 		else
+			@printf[None]("Type %s is not implemented\n".cstring(), _get_type(offset).string().cstring())
 			(0, U16.from[U8](0))
 		end
 
