@@ -2,7 +2,7 @@ use "collections"
 
 type SimpleField is ( U16 | U32 | U64 | U128 | I32 | String | F32 | F64 )
 type Field is ( SimpleField | MmdbMap | MmdbArray )
-// pointer, array, byte array, data cache container, boolean
+// pointer, byte array, data cache container, boolean
 
 interface _Shiftable[T]
 	fun shl(y: T): T
@@ -79,46 +79,37 @@ class val Parser
 		(byte_count, MmdbArray.create(result))
 
 	fun read_map(offset: USize): (USize, MmdbMap) =>
-//		try
-			let total_pairs = _length(offset)
-//			@printf[None]("expecting: %d entr{y,ies}\n".cstring(), total_pairs)
-			var running_offset = offset + _metadata_bytes(offset) + _length_bytes(offset)
-			let result: Map[String val, Field val] val = recover val
-				var result = Map[String, Field]
-				var counter: USize = 0
-				@printf[None]("new offset: %d\n".cstring(), running_offset)
-				while counter < total_pairs do
-					@printf[None]("map key: offset: %d\n".cstring(), running_offset)
-					(let key_change: USize, let key: String) = read_string(running_offset)
-					@printf[None]("k: %s\n".cstring(), key.cstring())
-					running_offset = running_offset + key_change
-					@printf[None]("map value: offset: %d, last change: %d\n".cstring(), running_offset, key_change)
-					(let value_change: USize, let value: Field) = read_field(running_offset)
-					running_offset = running_offset + value_change
-					@printf[None]("map value end: offset: %d, last change: %d\n".cstring(), running_offset, value_change)
+		let total_pairs = _length(offset)
+		var running_offset = offset + _metadata_bytes(offset) + _length_bytes(offset)
+		let result: Map[String val, Field val] val = recover val
+			var result = Map[String, Field]
+			var counter: USize = 0
+			@printf[None]("new offset: %d\n".cstring(), running_offset)
+			while counter < total_pairs do
+				@printf[None]("map key: offset: %d\n".cstring(), running_offset)
+				(let key_change: USize, let key: String) = read_string(running_offset)
+				@printf[None]("k: %s\n".cstring(), key.cstring())
+				running_offset = running_offset + key_change
+				@printf[None]("map value: offset: %d, last change: %d\n".cstring(), running_offset, key_change)
+				(let value_change: USize, let value: Field) = read_field(running_offset)
+				running_offset = running_offset + value_change
+				@printf[None]("map value end: offset: %d, last change: %d\n".cstring(), running_offset, value_change)
 
-					match value
-					| let s: String => @printf[None]("v: %s\n".cstring(), s.cstring())
-					| let u: Unsigned => @printf[None]("v: %s\n".cstring(), u.string().cstring())
-					| let m: MmdbMap => @printf[None]("v: map with %d key(s)\n".cstring(), m.data.size())
-					else
-						@printf[None]("v: other\n".cstring())
-					end
-//					match value
-//					| let s: String => @printf[None]("new key: %s, new value: %s, new offset: %d\n".cstring(), key.cstring(), s.cstring(), running_offset)
-//					| let u: Unsigned => @printf[None]("new key: %s, new value: %d, new offset: %d\n".cstring(), key.cstring(), u, running_offset)
-//					end
-
-					result(key) = value
-					counter = counter + 1
+				match value
+				| let s: String => @printf[None]("v: %s\n".cstring(), s.cstring())
+				| let u: Unsigned => @printf[None]("v: %s\n".cstring(), u.string().cstring())
+				| let m: MmdbMap => @printf[None]("v: map with %d key(s)\n".cstring(), m.data.size())
+				else
+					@printf[None]("v: other\n".cstring())
 				end
-				consume result
+
+				result(key) = value
+				counter = counter + 1
 			end
-//			(0, MmdbMap(result))
-			(running_offset - offset, MmdbMap(result))
-//		else
-//			recover val Map[String, Field] end
-//		end
+			consume result
+		end
+		(running_offset - offset, MmdbMap(result))
+
 	fun read_field(offset: USize): (USize, Field) =>
 		match _get_type(offset)
 		// | 0 marker for data type extension
@@ -129,9 +120,8 @@ class val Parser
 		| 5 => read_unsigned[U16](offset)
 		| 6 => read_unsigned[U32](offset)
 		| 7 =>
-//			read_map(offset)
+//			read_map(offset) // causes a segfault.
 			let res: (USize, Field) = read_map(offset)
-//			@printf[None]("map read using %d bytes\n".cstring(), res._1)
 			res
 		// | 8 => I32
 		| 9 => read_unsigned[U64](offset)
