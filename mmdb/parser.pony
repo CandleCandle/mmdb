@@ -76,39 +76,27 @@ class val Parser
 			end
 			res
 		end
-		(byte_count, MmdbArray.create(result))
+		(byte_count, MmdbArray(result))
 
 	fun read_map(offset: USize): (USize, MmdbMap) =>
-		let total_pairs = _length(offset)
-		var running_offset = offset + _metadata_bytes(offset) + _length_bytes(offset)
+		var byte_count: USize = 0
 		let result: Map[String val, Field val] val = recover val
-			var result = Map[String, Field]
+			let entry_count = _length(offset)
+			byte_count = byte_count + _metadata_bytes(offset) + _length_bytes(offset)
+			var res = Map[String, Field](entry_count)
 			var counter: USize = 0
-			@printf[None]("new offset: %d\n".cstring(), running_offset)
-			while counter < total_pairs do
-				@printf[None]("map key: offset: %d\n".cstring(), running_offset)
-				(let key_change: USize, let key: String) = read_string(running_offset)
-				@printf[None]("k: %s\n".cstring(), key.cstring())
-				running_offset = running_offset + key_change
-				@printf[None]("map value: offset: %d, last change: %d\n".cstring(), running_offset, key_change)
-				(let value_change: USize, let value: Field) = read_field(running_offset)
-				running_offset = running_offset + value_change
-				@printf[None]("map value end: offset: %d, last change: %d\n".cstring(), running_offset, value_change)
+			while counter < entry_count do
+				(let key_change: USize, let key: String) = read_string(offset + byte_count)
+				byte_count = byte_count + key_change
+				(let value_change: USize, let value: Field) = read_field(offset + byte_count)
+				byte_count = byte_count + value_change
 
-				match value
-				| let s: String => @printf[None]("v: %s\n".cstring(), s.cstring())
-				| let u: Unsigned => @printf[None]("v: %s\n".cstring(), u.string().cstring())
-				| let m: MmdbMap => @printf[None]("v: map with %d key(s)\n".cstring(), m.data.size())
-				else
-					@printf[None]("v: other\n".cstring())
-				end
-
-				result(key) = value
+				res(key) = value
 				counter = counter + 1
 			end
-			consume result
+			res
 		end
-		(running_offset - offset, MmdbMap(result))
+		(byte_count, MmdbMap(result))
 
 	fun read_field(offset: USize): (USize, Field) =>
 		match _get_type(offset)
