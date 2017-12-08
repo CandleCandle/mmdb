@@ -92,8 +92,8 @@ class val Parser
 				end
 				consume result
 			end
-			(0, MmdbMap(result))
-//			(running_offset - offset, MmdbMap(result))
+//			(0, MmdbMap(result))
+			(running_offset - offset, MmdbMap(result))
 //		else
 //			recover val Map[String, Field] end
 //		end

@@ -226,7 +226,9 @@ class iso _MapWithinMapTest is UnitTest
 		let arr: Array[U8] val = [0b11100010; 0b01000001; 0x61; 0b01000001; 0x62; 0b01000001; 0x62; 0b11100001; 0b01000001; 0x63; 0b10100001; 0x2A]
 		@printf[None]("length: %d %s\n".cstring(), arr.size(), _DataDump(arr).cstring())
 		let undertest = Parser(arr)
-		let result: Map[String val, Field val] val = undertest.read_map(0)._2.data
+		(let len: USize, let result': MmdbMap) = undertest.read_map(0)
+		let result: Map[String val, Field val] val = result'.data
+		h.assert_eq[USize](len, 12)
 		h.assert_eq[USize](result.size(), 2)
 		try
 			let value: String = match result.apply("a")?
