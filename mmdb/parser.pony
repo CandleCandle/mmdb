@@ -1,7 +1,7 @@
 use "collections"
 
 type SimpleField is ( U16 | U32 | U64 | U128 | I32 | String | F32 | F64 )
-type Field is ( SimpleField | MmdbMap )
+type Field is ( SimpleField | MmdbMap | MmdbArray )
 // pointer, array, byte array, data cache container, boolean
 
 interface _Shiftable[T]
@@ -11,6 +11,11 @@ interface _Shiftable[T]
 class val MmdbMap
 	let data: Map[String val, Field val] val
 	new val create(data': Map[String val, Field val] val) =>
+		data = data'
+
+class val MmdbArray
+	let data: Array[Field val] val
+	new val create(data': Array[Field val] val) =>
 		data = data'
 
 class val Parser
@@ -55,6 +60,23 @@ class val Parser
 		else
 			(0, "")
 		end
+
+	fun read_array(offset: USize): (USize, MmdbArray) =>
+		var byte_count: USize = 0
+		let result: Array[Field] val = recover val
+			let entry_count = _length(offset)
+			byte_count = byte_count + _metadata_bytes(offset) + _length_bytes(offset)
+			var res = Array[Field](entry_count)
+			var counter: USize = 0
+			while counter < entry_count do
+				(let change: USize, let value: Field) = read_field(offset + byte_count)
+				byte_count = byte_count + change
+				res.push(value)
+				counter = counter + 1
+			end
+			res
+		end
+		(byte_count, MmdbArray.create(result))
 
 	fun read_map(offset: USize): (USize, MmdbMap) =>
 //		try

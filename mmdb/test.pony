@@ -62,6 +62,7 @@ actor Main is TestList
 		test(_DataType("parse/metadata/type/u64", 9, [0b0; 0b10]))
 		test(_DataType("parse/metadata/type/u128", 10, [0b0; 0b11]))
 		test(_MapWithinMapTest)
+		test(_ArrayWithMultipleElements)
 
 class iso _UnsignedTests[T: (_Shiftable[T] & Integer[T] & Unsigned val)] is UnitTest
 	let _name: String val
@@ -252,3 +253,25 @@ class iso _MapWithinMapTest is UnitTest
 			h.fail("no key 'b'")
 		end
 
+class iso _ArrayWithMultipleElements is UnitTest
+	fun name(): String => "parse/field/array/multi-element"
+	fun apply(h: TestHelper) =>
+		let arr: Array[U8] val = [0b00001000; 0x04; 0x42; 0x64; 0x65; 0x42; 0x65; 0x6E; 0x42; 0x65; 0x73; 0x42; 0x66; 0x72; 0x42; 0x6A; 0x61; 0x45; 0x70; 0x74; 0x2D; 0x42; 0x52; 0x42; 0x72; 0x75; 0x45; 0x7A; 0x68; 0x2D; 0x43; 0x4E]
+		@printf[None]("length: %d %s\n".cstring(), arr.size(), _DataDump(arr).cstring())
+		let undertest = Parser(arr)
+		(let bytes_read: USize, let result': MmdbArray) = undertest.read_array(0)
+		let result: Array[Field] val = result'.data
+		h.assert_eq[USize](bytes_read, 32)
+		h.assert_eq[USize](result.size(), 8)
+		let expected: Array[String] = ["de"; "en"; "es"; "fr"; "ja"; "pt-BR"; "ru"; "zh-CN"]
+		for (i, s) in expected.pairs() do
+			try
+				match result(i)?
+				| let f: String =>h.assert_eq[String](f, s)
+				else
+					h.fail("Could not match at index: " + i.string() + " with value: " + s)
+				end
+			else
+				h.fail("array index failure at idx: " + i.string())
+			end
+		end
