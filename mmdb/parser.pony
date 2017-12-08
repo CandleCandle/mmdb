@@ -68,16 +68,16 @@ class val Parser
 				while counter < total_pairs do
 					@printf[None]("map key: offset: %d\n".cstring(), running_offset)
 					(let key_change: USize, let key: String) = read_string(running_offset)
+					@printf[None]("k: %s\n".cstring(), key.cstring())
 					running_offset = running_offset + key_change
 					@printf[None]("map value: offset: %d, last change: %d\n".cstring(), running_offset, key_change)
 					(let value_change: USize, let value: Field) = read_field(running_offset)
 					running_offset = running_offset + value_change
 					@printf[None]("map value end: offset: %d, last change: %d\n".cstring(), running_offset, value_change)
 
-					@printf[None]("k: %s\n".cstring(), key.cstring())
 					match value
 					| let s: String => @printf[None]("v: %s\n".cstring(), s.cstring())
-					| let u: Unsigned => @printf[None]("v: %d\n".cstring(), u)
+					| let u: Unsigned => @printf[None]("v: %s\n".cstring(), u.string().cstring())
 					| let m: MmdbMap => @printf[None]("v: map with %d key(s)\n".cstring(), m.data.size())
 					else
 						@printf[None]("v: other\n".cstring())
