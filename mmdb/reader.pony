@@ -22,10 +22,11 @@ class val Reader
 	fun resolve(addr: (U32 | U128)): Field =>
 		var current_node: U32 = 0
 		var bit_counter: U8 = 0
-		while bit_counter < 32 do
-			let bit: Bool = true // true = bit is 0; false = bit is 1
+		while bit_counter < 128 do
+			let mask: U128 = 1 << (127 - bit_counter)
+			let bit: Bool = (addr and mask) > 0 // true = bit is 1; false = bit is 0
 			var node: (U32, U32) = parser.read_node(current_node, record_size)
-			var next_node = if bit then node._1 else node._2 end
+			var next_node = if bit then node._2 else node._1 end
 			if next_node < node_count then
 				// pointer to the next node
 				current_node = next_node
