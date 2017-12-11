@@ -63,6 +63,8 @@ actor Main is TestList
 		test(_DataType("parse/metadata/type/u128", 10, [0b0; 0b11]))
 		test(_MapWithinMapTest)
 		test(_ArrayWithMultipleElements)
+		test(_ReadInitialNode8)
+		test(_ReadInitialNode16)
 
 class iso _UnsignedTests[T: (_Shiftable[T] & Integer[T] & Unsigned val)] is UnitTest
 	let _name: String val
@@ -275,3 +277,21 @@ class iso _ArrayWithMultipleElements is UnitTest
 				h.fail("array index failure at idx: " + i.string())
 			end
 		end
+
+class iso _ReadInitialNode8 is UnitTest
+	fun name(): String => "parse/node/initial/8"
+	fun apply(h: TestHelper) =>
+		let arr: Array[U8] val = [0x01; 0x02; 0x03; 0x04]
+		let undertest = Parser(arr)
+		(let first: U32, let second: U32) = undertest.read_node(0, 8)
+		h.assert_eq[U32](first, 1)
+		h.assert_eq[U32](second, 2)
+
+class iso _ReadInitialNode16 is UnitTest
+	fun name(): String => "parse/node/initial/16"
+	fun apply(h: TestHelper) =>
+		let arr: Array[U8] val = [0x01; 0x02; 0x03; 0x04]
+		let undertest = Parser(arr)
+		(let first: U32, let second: U32) = undertest.read_node(0, 16)
+		h.assert_eq[U32](first, 258)
+		h.assert_eq[U32](second, 772)

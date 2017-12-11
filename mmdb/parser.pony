@@ -47,6 +47,30 @@ class val Parser
 			(0, T.from[U8](0))
 		end
 
+	fun rfind(search: Array[U8] val): USize =>
+		0
+
+	fun read_node(node_id: U32, record_size: U16): (U32, U32) =>
+		let base_offset: USize = (node_id.usize() * record_size.usize() * 2)
+		let bytes = (record_size/8).u32()
+		(_read_record(base_offset, bytes), _read_record(base_offset + bytes.usize(), bytes))
+
+	fun _read_record(offset: USize, bytes: U32): U32 =>
+		@printf[None]("offset: %s, bytes: %s\n".cstring(), offset.string().cstring(), bytes.string().cstring())
+		try
+			var result: U32 = 0
+			var count: U32 = 0
+			while count < bytes do
+				let data_byte: U8 = data(offset + count.usize())?
+				result = result or (data_byte.u32().shl(8*(bytes - 1 - count)))
+				count = count + 1
+			end
+			result
+		else
+			0
+		end
+
+
 	fun read_string(offset: USize): (USize, String val) =>
 		try
 			let initial: U8 = data(offset)?
