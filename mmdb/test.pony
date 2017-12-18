@@ -65,6 +65,7 @@ actor Main is TestList
 		test(_ArrayWithMultipleElements)
 		test(_ReadInitialNode8)
 		test(_ReadInitialNode16)
+		test(_ReadViaPointer)
 
 class iso _UnsignedTests[T: (_Shiftable[T] & Integer[T] & Unsigned val)] is UnitTest
 	let _name: String val
@@ -154,7 +155,7 @@ class iso _MapZeroTest is UnitTest
 		let arr: Array[U8] val = [0b11100000]
 		@printf[None]("length: %d %s\n".cstring(), arr.size(), _DataDump(arr).cstring())
 		let undertest = Parser([0b11100000])
-		h.assert_eq[USize](undertest.read_map(0)._2.data.size(), 0)
+		h.assert_eq[USize](undertest.read_map(0, 0)._2.data.size(), 0)
 
 class iso _MapOneTest is UnitTest
 	fun name(): String => "parse/field/map/1-element"
@@ -162,7 +163,7 @@ class iso _MapOneTest is UnitTest
 		let arr: Array[U8] val = [0b11100001; 0b01000001; 0x61; 0b01000001; 0x62]
 		@printf[None]("length: %d %s\n".cstring(), arr.size(), _DataDump(arr).cstring())
 		let undertest = Parser(arr)
-		let result: Map[String val, Field val] val = undertest.read_map(0)._2.data
+		let result: Map[String val, Field val] val = undertest.read_map(0, 0)._2.data
 		h.assert_eq[USize](result.size(), 1)
 		try
 			let value: String = match result.apply("a")?
@@ -179,7 +180,7 @@ class iso _MapTwoTest is UnitTest
 		let arr: Array[U8] val = [0b11100010; 0b01000001; 0x61; 0b01000001; 0x62; 0b01000001; 0x62; 0b01000001; 0x63]
 		@printf[None]("length: %d %s\n".cstring(), arr.size(), _DataDump(arr).cstring())
 		let undertest = Parser(arr)
-		let result: Map[String val, Field val] val = undertest.read_map(0)._2.data
+		let result: Map[String val, Field val] val = undertest.read_map(0, 0)._2.data
 		h.assert_eq[USize](result.size(), 2)
 		try
 			let value: String = match result.apply("a")?
@@ -204,7 +205,7 @@ class iso _MapTwoMixedContentTest is UnitTest
 		let arr: Array[U8] val = [0b11100010; 0b01000001; 0x61; 0b01000001; 0x62; 0b01000001; 0x62; 0b10100001; 0x2A]
 		@printf[None]("length: %d %s\n".cstring(), arr.size(), _DataDump(arr).cstring())
 		let undertest = Parser(arr)
-		let result: Map[String val, Field val] val = undertest.read_map(0)._2.data
+		let result: Map[String val, Field val] val = undertest.read_map(0, 0)._2.data
 		h.assert_eq[USize](result.size(), 2)
 		try
 			let value: String = match result.apply("a")?
@@ -229,7 +230,7 @@ class iso _MapWithinMapTest is UnitTest
 		let arr: Array[U8] val = [0b11100010; 0b01000001; 0x61; 0b01000001; 0x62; 0b01000001; 0x62; 0b11100001; 0b01000001; 0x63; 0b10100001; 0x2A]
 		@printf[None]("length: %d %s\n".cstring(), arr.size(), _DataDump(arr).cstring())
 		let undertest = Parser(arr)
-		(let len: USize, let result': MmdbMap) = undertest.read_map(0)
+		(let len: USize, let result': MmdbMap) = undertest.read_map(0, 0)
 		let result: Map[String val, Field val] val = result'.data
 		h.assert_eq[USize](len, 12)
 		h.assert_eq[USize](result.size(), 2)
@@ -261,7 +262,7 @@ class iso _ArrayWithMultipleElements is UnitTest
 		let arr: Array[U8] val = [0b00001000; 0x04; 0x42; 0x64; 0x65; 0x42; 0x65; 0x6E; 0x42; 0x65; 0x73; 0x42; 0x66; 0x72; 0x42; 0x6A; 0x61; 0x45; 0x70; 0x74; 0x2D; 0x42; 0x52; 0x42; 0x72; 0x75; 0x45; 0x7A; 0x68; 0x2D; 0x43; 0x4E]
 		@printf[None]("length: %d %s\n".cstring(), arr.size(), _DataDump(arr).cstring())
 		let undertest = Parser(arr)
-		(let bytes_read: USize, let result': MmdbArray) = undertest.read_array(0)
+		(let bytes_read: USize, let result': MmdbArray) = undertest.read_array(0, 0)
 		let result: Array[Field] val = result'.data
 		h.assert_eq[USize](bytes_read, 32)
 		h.assert_eq[USize](result.size(), 8)
@@ -295,3 +296,17 @@ class iso _ReadInitialNode16 is UnitTest
 		(let first: U32, let second: U32) = undertest.read_node(0, 16)
 		h.assert_eq[U32](first, 258)
 		h.assert_eq[U32](second, 772)
+
+class iso _ReadViaPointer is UnitTest
+	fun name(): String => "parse/node/pointer/string"
+	fun apply(h: TestHelper) =>
+		let arr: Array[U8] val = [0x20; 0x04; 0xFF; 0xFF; 0x41; 0x61]
+		let undertest = Parser(arr)
+		(let bytes_read: USize, let result: Field) = undertest.read_pointer(0, 0)
+		h.assert_eq[USize](bytes_read, 2)
+		let value: String = match result
+			| let s: String => s
+			else "error" end
+		h.assert_eq[String](value, "a")
+
+

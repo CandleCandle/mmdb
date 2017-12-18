@@ -47,6 +47,25 @@ class val Parser
 			(0, T.from[U8](0))
 		end
 
+	fun read_pointer(offset: USize, data_offset: USize): (USize, Field) =>
+	try
+		let size: U8 = (data(offset)? and 0b00011000) >> 3
+		let value: U32 = (data(offset)? and 0b00000111).u32()
+		(let bytes_read: USize, let pointed_offset: U32) = match size
+			| 0 => (2, (value << 8) or _read_record(offset+1, 1))
+			| 1 => (3, ((value << 16) or _read_record(offset+1, 2)) + 2048)
+			| 2 => (4, ((value << 24) or _read_record(offset+1, 3)) + 526336)
+			| 3 => (5, _read_record(offset+1, 4))
+			else
+				(1, U32.from[U8](0))
+			end
+
+		// discard the bytes read from the read_field call.
+		(bytes_read, read_field(data_offset + pointed_offset.usize(), data_offset)._2)
+	else
+		(1, U32.from[U8](0))
+	end
+
 	fun rfind(search: Array[U8] val): USize =>
 		0
 
@@ -85,7 +104,7 @@ class val Parser
 			(0, "")
 		end
 
-	fun read_array(offset: USize): (USize, MmdbArray) =>
+	fun read_array(offset: USize, data_section_offset: USize): (USize, MmdbArray) =>
 		var byte_count: USize = 0
 		let result: Array[Field] val = recover val
 			let entry_count = _length(offset)
@@ -93,7 +112,7 @@ class val Parser
 			var res = Array[Field](entry_count)
 			var counter: USize = 0
 			while counter < entry_count do
-				(let change: USize, let value: Field) = read_field(offset + byte_count)
+				(let change: USize, let value: Field) = read_field(offset + byte_count, data_section_offset)
 				byte_count = byte_count + change
 				res.push(value)
 				counter = counter + 1
@@ -102,7 +121,7 @@ class val Parser
 		end
 		(byte_count, MmdbArray(result))
 
-	fun read_map(offset: USize): (USize, MmdbMap) =>
+	fun read_map(offset: USize, data_section_offset: USize): (USize, MmdbMap) =>
 		var byte_count: USize = 0
 		let result: Map[String val, Field val] val = recover val
 			let entry_count = _length(offset)
@@ -112,7 +131,7 @@ class val Parser
 			while counter < entry_count do
 				(let key_change: USize, let key: String) = read_string(offset + byte_count)
 				byte_count = byte_count + key_change
-				(let value_change: USize, let value: Field) = read_field(offset + byte_count)
+				(let value_change: USize, let value: Field) = read_field(offset + byte_count, data_section_offset)
 				byte_count = byte_count + value_change
 
 				res(key) = value
@@ -122,10 +141,10 @@ class val Parser
 		end
 		(byte_count, MmdbMap(result))
 
-	fun read_field(offset: USize): (USize, Field) =>
+	fun read_field(offset: USize, data_section_offset: USize): (USize, Field) =>
 		match _get_type(offset)
 		// | 0 marker for data type extension
-		// | 1 => pointer
+		| 1 => read_pointer(offset, data_section_offset)
 		| 2 => read_string(offset)
 		// | 3 => F64
 		// | 4 => byte array
@@ -133,12 +152,12 @@ class val Parser
 		| 6 => read_unsigned[U32](offset)
 		| 7 =>
 //			read_map(offset) // causes a segfault.
-			let res: (USize, Field) = read_map(offset)
+			let res: (USize, Field) = read_map(offset, data_section_offset)
 			res
 		// | 8 => I32
 		| 9 => read_unsigned[U64](offset)
 		| 10 => read_unsigned[U128](offset)
-		| 11 => read_array(offset)
+		| 11 => read_array(offset, data_section_offset)
 		// | 12 => data cache container
 		// | 13 => end marker
 		else

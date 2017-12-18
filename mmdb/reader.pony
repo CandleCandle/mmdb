@@ -5,13 +5,15 @@ class val Reader
 	let parser: Parser val
 	let node_count: U32
 	let record_size: U16
+	let data_section_offset: USize
 
 	new create(parser': Parser)? =>
 		// partial when the database does not have the required metadata.
 		parser = parser'
 		let marker: Array[U8] = [0xAB; 0xCD; 0xEF; 0x4D; 0x61; 0x78; 0x4D; 0x69; 0x6E; 0x64; 0x2E; 0x63; 0x6F; 0x6D]
 		let metadata_start_offset: USize = 3185089// parser.rfind(marker) + marker.size()
-		let metadata: MmdbMap = parser.read_map(metadata_start_offset)._2
+		data_section_offset = 3109030// TODO calculate this from the metadata
+		let metadata: MmdbMap = parser.read_map(metadata_start_offset, data_section_offset)._2
 		node_count = match metadata.data("node_count")?
 			| let u: U32 => u
 			else 0 end
@@ -37,7 +39,7 @@ class val Reader
 						(next_node - node_count).usize()
 						+ ((node_count * record_size.u32() * 2)/8).usize()
 						+ 16
-				return parser.read_field(offset)._2
+				return parser.read_field(offset, data_section_offset)._2
 			else // next_node == node_count
 				// no data
 				return U16.from[U8](0)
