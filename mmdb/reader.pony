@@ -38,7 +38,7 @@ class val Reader
 				let offset: USize =
 						(next_node - node_count).usize()
 						+ ((node_count * record_size.u32() * 2)/8).usize()
-						+ 16
+//						+ 16
 				return parser.read_field(offset, data_section_offset)._2
 			else // next_node == node_count
 				// no data
