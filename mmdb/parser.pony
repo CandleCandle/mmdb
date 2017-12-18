@@ -41,13 +41,14 @@ class val Parser
 				result = result or (T.from[U8](data_byte).shl(shift))
 				count = count + 1
 			end
-			@printf[None]("Uxx result: %d using %d bytes\n".cstring(), result, metadata_bytes + length)
+//			@printf[None]("Uxx result: %d using %d bytes\n".cstring(), result, metadata_bytes + length)
 			(metadata_bytes + length, result)
 		else
 			(0, T.from[U8](0))
 		end
 
 	fun read_pointer(offset: USize, data_offset: USize): (USize, Field) =>
+//		@printf[None]("pointer at %d with data section offset %d\n".cstring(), offset, data_offset)
 	try
 		let size: U8 = (data(offset)? and 0b00011000) >> 3
 		let value: U32 = (data(offset)? and 0b00000111).u32()
@@ -59,6 +60,7 @@ class val Parser
 			else
 				(1, U32.from[U8](0))
 			end
+//		@printf[None]("pointer at %d pointing to %d\n".cstring(), offset, pointed_offset)
 
 		// discard the bytes read from the read_field call.
 		(bytes_read, read_field(data_offset + pointed_offset.usize(), data_offset)._2)
@@ -75,7 +77,7 @@ class val Parser
 		(_read_record(base_offset, bytes), _read_record(base_offset + bytes.usize(), bytes))
 
 	fun _read_record(offset: USize, bytes: U32): U32 =>
-		@printf[None]("offset: %s, bytes: %s\n".cstring(), offset.string().cstring(), bytes.string().cstring())
+//		@printf[None]("offset: %s, bytes: %s\n".cstring(), offset.string().cstring(), bytes.string().cstring())
 		try
 			var result: U32 = 0
 			var count: U32 = 0
@@ -98,7 +100,7 @@ class val Parser
 			let length_bytes = _length_bytes(offset)
 			let start = offset + metadata_bytes + length_bytes
 			let finish = start + length
-			@printf[None]("String at: offset %d; metadata %d, length_bytes %d, length: %d, start %d, finish %d\n".cstring(), offset, metadata_bytes, length_bytes, length, start, finish)
+//			@printf[None]("String at: offset %d; metadata %d, length_bytes %d, length: %d, start %d, finish %d\n".cstring(), offset, metadata_bytes, length_bytes, length, start, finish)
 			(finish - offset, String.from_array(recover val data.slice(start, finish) end))
 		else
 			(0, "")
@@ -129,7 +131,10 @@ class val Parser
 			var res = Map[String, Field](entry_count)
 			var counter: USize = 0
 			while counter < entry_count do
-				(let key_change: USize, let key: String) = read_string(offset + byte_count)
+				(let key_change: USize, let key': Field) = read_field(offset + byte_count, data_section_offset)
+				let key: String = match key'
+				| let s: String => s
+				else "error" end
 				byte_count = byte_count + key_change
 				(let value_change: USize, let value: Field) = read_field(offset + byte_count, data_section_offset)
 				byte_count = byte_count + value_change
@@ -142,9 +147,12 @@ class val Parser
 		(byte_count, MmdbMap(result))
 
 	fun read_field(offset: USize, data_section_offset: USize): (USize, Field) =>
+//		@printf[None]("Type %d at offset %d\n".cstring(), _get_type(offset), offset)
 		match _get_type(offset)
 		// | 0 marker for data type extension
-		| 1 => read_pointer(offset, data_section_offset)
+		| 1 => 
+//			@printf[None]("pointer at offset %d and %d".cstring(), offset, data_section_offset)
+			read_pointer(offset, data_section_offset)
 		| 2 => read_string(offset)
 		// | 3 => F64
 		// | 4 => byte array
@@ -161,7 +169,7 @@ class val Parser
 		// | 12 => data cache container
 		// | 13 => end marker
 		else
-			@printf[None]("Type %s is not implemented\n".cstring(), _get_type(offset).string().cstring())
+			@printf[None]("Type %s is not implemented at offset %d\n".cstring(), _get_type(offset).string().cstring(), offset)
 			(0, U16.from[U8](0))
 		end
 
