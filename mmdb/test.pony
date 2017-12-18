@@ -64,6 +64,7 @@ actor Main is TestList
 		test(_MapWithinMapTest)
 		test(_ArrayWithMultipleElements)
 		test(_ReadInitialNode8)
+		test(_ReadSecondNode8)
 		test(_ReadInitialNode16)
 		test(_ReadViaPointer)
 
@@ -288,6 +289,15 @@ class iso _ReadInitialNode8 is UnitTest
 		h.assert_eq[U32](first, 1)
 		h.assert_eq[U32](second, 2)
 
+class iso _ReadSecondNode8 is UnitTest
+	fun name(): String => "parse/node/second/8"
+	fun apply(h: TestHelper) =>
+		let arr: Array[U8] val = [0x01; 0x02; 0x03; 0x04]
+		let undertest = Parser(arr)
+		(let first: U32, let second: U32) = undertest.read_node(1, 8)
+		h.assert_eq[U32](first, 3)
+		h.assert_eq[U32](second, 4)
+
 class iso _ReadInitialNode16 is UnitTest
 	fun name(): String => "parse/node/initial/16"
 	fun apply(h: TestHelper) =>
@@ -298,7 +308,7 @@ class iso _ReadInitialNode16 is UnitTest
 		h.assert_eq[U32](second, 772)
 
 class iso _ReadViaPointer is UnitTest
-	fun name(): String => "parse/node/pointer/string"
+	fun name(): String => "parse/field/pointer/string"
 	fun apply(h: TestHelper) =>
 		let arr: Array[U8] val = [0x20; 0x04; 0xFF; 0xFF; 0x41; 0x61]
 		let undertest = Parser(arr)

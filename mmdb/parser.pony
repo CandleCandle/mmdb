@@ -72,8 +72,10 @@ class val Parser
 		0
 
 	fun read_node(node_id: U32, record_size: U16): (U32, U32) =>
-		let base_offset: USize = (node_id.usize() * record_size.usize() * 2)
 		let bytes = (record_size/8).u32()
+		let base_offset: USize = (node_id.usize() * bytes.usize() * 2)
+		// read node 1 size 8, from 16 and 1 bytes
+		@printf[None]("read node %d size %d, from %d and %d bytes\n".cstring(), node_id, record_size, base_offset, bytes)
 		(_read_record(base_offset, bytes), _read_record(base_offset + bytes.usize(), bytes))
 
 	fun _read_record(offset: USize, bytes: U32): U32 =>
