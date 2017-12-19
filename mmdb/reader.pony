@@ -22,7 +22,7 @@ class val Reader
 		record_size = match metadata.data("record_size")?
 			| let u: U16  => u
 			else 0 end
-		data_section_offset = node_count.usize() * record_size.usize() * 2  //3109030// TODO calculate this from the metadata
+		data_section_offset = 16 + (node_count.usize() * record_size.usize() * 2)  //3109030// TODO calculate this from the metadata
 
 	fun resolve(addr: U128): Field =>
 		var current_node: U32 = 0
