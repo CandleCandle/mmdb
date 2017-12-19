@@ -67,6 +67,8 @@ actor Main is TestList
 		test(_ReadSecondNode8)
 		test(_ReadInitialNode16)
 		test(_ReadViaPointer)
+		test(_RFindFound)
+		test(_RFindNotFound)
 
 class iso _UnsignedTests[T: (_Shiftable[T] & Integer[T] & Unsigned val)] is UnitTest
 	let _name: String val
@@ -319,4 +321,24 @@ class iso _ReadViaPointer is UnitTest
 			else "error" end
 		h.assert_eq[String](value, "a")
 
+class iso _RFindFound is UnitTest
+	fun name(): String => "parse/rfind/found"
+	fun apply(h: TestHelper) ? =>
+		let arr: Array[U8] val = [0x20; 0x04; 0xFF; 0xFF; 0x41; 0x61]
+		let undertest = Parser(arr)
+		let search: Array[U8] val = [0xFF; 0xFF]
+		let result = undertest.rfind(search)?
+		h.assert_eq[USize](2, result)
 
+class iso _RFindNotFound is UnitTest
+	fun name(): String => "parse/rfind/not_found"
+	fun apply(h: TestHelper) =>
+		let arr: Array[U8] val = [0x20; 0x04; 0xFF; 0xFF; 0x41; 0x61]
+		let undertest = Parser(arr)
+		let search: Array[U8] val = [0xAA; 0xAA]
+//		var f: USize = 10
+//		while f >= 0 do
+//			@printf[None]("f: %d\n".cstring(), f)
+//			f = f - 1
+//		end
+		h.assert_error({() ? => undertest.rfind(search)? })

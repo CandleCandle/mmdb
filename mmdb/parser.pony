@@ -68,8 +68,25 @@ class val Parser
 		(1, U32.from[U8](0))
 	end
 
-	fun rfind(search: Array[U8] val): USize =>
-		0
+	fun rfind(search: Array[U8] val): USize ? =>
+		var result: USize = data.size()
+		while result > 0 do
+			result = result - 1
+			if _is_at(result, search) then return result end
+		end
+		error
+
+	fun _is_at(offset: USize, search: Array[U8] val): Bool =>
+		var c: USize = 0
+		while c < search.size() do
+			try
+				let d = data(offset + c)?
+				let s = search(c)?
+				if d != s then return false end
+			else return false end
+			c = c + 1
+		end
+		true
 
 	fun read_node(node_id: U32, record_size: U16): (U32, U32) =>
 		let bytes = (record_size/8).u32()
