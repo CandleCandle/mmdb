@@ -168,10 +168,7 @@ class val Parser
 		// | 4 => byte array
 		| 5 => read_unsigned[U16](offset)
 		| 6 => read_unsigned[U32](offset)
-		| 7 =>
-//			read_map(offset) // causes a segfault.
-			let res: (USize, Field) = read_map(offset, data_section_offset)
-			res
+		| 7 => read_map(offset, data_section_offset)
 		// | 8 => I32
 		| 9 => read_unsigned[U64](offset)
 		| 10 => read_unsigned[U128](offset)
