@@ -84,6 +84,9 @@ class val Parser
 			result = result - 1
 			if _is_at(result, search) then return result end
 		end
+		match _log
+			| let l: Logger[String] => l(Error) and l.log("failed to rfind")
+		end
 		error
 
 	fun _is_at(offset: USize, search: Array[U8] val): Bool =>
