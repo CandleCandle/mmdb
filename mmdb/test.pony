@@ -1,6 +1,7 @@
 use "collections"
 use "ponytest"
 use "format"
+use "logger"
 
 primitive _DataDump
 	fun val apply(arr: Array[U8] val): String val =>
@@ -19,6 +20,10 @@ primitive _DataDump
 				"err"
 			end
 		end
+
+primitive _UnderTest
+	fun apply(env: Env, arr: Array[U8] val): Parser val =>
+		recover val Parser(arr, StringLogger(Fine, env.out)) end
 
 actor Main is TestList
 	new create(env: Env) => PonyTest(env, this)
@@ -82,7 +87,7 @@ class iso _UnsignedTests[T: (_Shiftable[T] & Integer[T] & Unsigned val)] is Unit
 		_length = length'
 	fun name(): String => _name
 	fun apply(h: TestHelper) =>
-		let undertest = Parser(_input)
+		let undertest = _UnderTest(h.env, _input)
 		h.assert_eq[USize](undertest.read_unsigned[USize](0)._1, _length)
 		h.assert_eq[T](undertest.read_unsigned[T](0)._2, _result)
 
@@ -96,7 +101,7 @@ class iso _UTF8StringTests is UnitTest
 		_result = result'
 	fun name(): String => _name
 	fun apply(h: TestHelper) =>
-		let undertest = Parser(_input)
+		let undertest = _UnderTest(h.env, _input)
 		h.assert_eq[String](undertest.read_string(0)._2, _result)
 
 class iso _MetadataBytes is UnitTest
@@ -109,7 +114,7 @@ class iso _MetadataBytes is UnitTest
 		_result = result'
 	fun name(): String => _name
 	fun apply(h: TestHelper) =>
-		let undertest = Parser(_input)
+		let undertest = _UnderTest(h.env, _input)
 		h.assert_eq[USize](undertest._metadata_bytes(0), _result)
 
 class iso _LengthBytes is UnitTest
@@ -122,7 +127,7 @@ class iso _LengthBytes is UnitTest
 		_result = result'
 	fun name(): String => _name
 	fun apply(h: TestHelper) =>
-		let undertest = Parser(_input)
+		let undertest = _UnderTest(h.env, _input)
 		h.assert_eq[USize](undertest._length_bytes(0), _result)
 
 class iso _DataLength is UnitTest
@@ -135,7 +140,7 @@ class iso _DataLength is UnitTest
 		_result = result'
 	fun name(): String => _name
 	fun apply(h: TestHelper) =>
-		let undertest = Parser(_input)
+		let undertest = _UnderTest(h.env, _input)
 		h.assert_eq[USize](undertest._length(0), _result)
 
 class iso _DataType is UnitTest
@@ -148,21 +153,21 @@ class iso _DataType is UnitTest
 		_result = result'
 	fun name(): String => _name
 	fun apply(h: TestHelper) =>
-		let undertest = Parser(_input)
+		let undertest = _UnderTest(h.env, _input)
 		h.assert_eq[U16](undertest._get_type(0), _result)
 
 class iso _MapZeroTest is UnitTest
 	fun name(): String => "parse/field/map/0-element"
 	fun apply(h: TestHelper) =>
 		let arr: Array[U8] val = [0b11100000]
-		let undertest = Parser([0b11100000])
+		let undertest = _UnderTest(h.env, arr)
 		h.assert_eq[USize](undertest.read_map(0, 0)._2.data.size(), 0)
 
 class iso _MapOneTest is UnitTest
 	fun name(): String => "parse/field/map/1-element"
 	fun apply(h: TestHelper) =>
 		let arr: Array[U8] val = [0b11100001; 0b01000001; 0x61; 0b01000001; 0x62]
-		let undertest = Parser(arr)
+		let undertest = _UnderTest(h.env, arr)
 		let result: Map[String val, Field val] val = undertest.read_map(0, 0)._2.data
 		h.assert_eq[USize](result.size(), 1)
 		try
@@ -178,7 +183,7 @@ class iso _MapTwoTest is UnitTest
 	fun name(): String => "parse/field/map/2-element"
 	fun apply(h: TestHelper) =>
 		let arr: Array[U8] val = [0b11100010; 0b01000001; 0x61; 0b01000001; 0x62; 0b01000001; 0x62; 0b01000001; 0x63]
-		let undertest = Parser(arr)
+		let undertest = _UnderTest(h.env, arr)
 		let result: Map[String val, Field val] val = undertest.read_map(0, 0)._2.data
 		h.assert_eq[USize](result.size(), 2)
 		try
@@ -226,7 +231,7 @@ class iso _MapWithinMapTest is UnitTest
 	fun name(): String => "parse/field/map/2-element/nested-map"
 	fun apply(h: TestHelper) =>
 		let arr: Array[U8] val = [0b11100010; 0b01000001; 0x61; 0b01000001; 0x62; 0b01000001; 0x62; 0b11100001; 0b01000001; 0x63; 0b10100001; 0x2A]
-		let undertest = Parser(arr)
+		let undertest = _UnderTest(h.env, arr)
 		(let len: USize, let result': MmdbMap) = undertest.read_map(0, 0)
 		let result: Map[String val, Field val] val = result'.data
 		h.assert_eq[USize](len, 12)
@@ -257,7 +262,7 @@ class iso _ArrayWithMultipleElements is UnitTest
 	fun name(): String => "parse/field/array/multi-element"
 	fun apply(h: TestHelper) =>
 		let arr: Array[U8] val = [0b00001000; 0x04; 0x42; 0x64; 0x65; 0x42; 0x65; 0x6E; 0x42; 0x65; 0x73; 0x42; 0x66; 0x72; 0x42; 0x6A; 0x61; 0x45; 0x70; 0x74; 0x2D; 0x42; 0x52; 0x42; 0x72; 0x75; 0x45; 0x7A; 0x68; 0x2D; 0x43; 0x4E]
-		let undertest = Parser(arr)
+		let undertest = _UnderTest(h.env, arr)
 		(let bytes_read: USize, let result': MmdbArray) = undertest.read_array(0, 0)
 		let result: Array[Field] val = result'.data
 		h.assert_eq[USize](bytes_read, 32)
@@ -279,7 +284,7 @@ class iso _ReadInitialNode8 is UnitTest
 	fun name(): String => "parse/node/initial/8"
 	fun apply(h: TestHelper) =>
 		let arr: Array[U8] val = [0x01; 0x02; 0x03; 0x04]
-		let undertest = Parser(arr)
+		let undertest = _UnderTest(h.env, arr)
 		(let first: U32, let second: U32) = undertest.read_node(0, 8)
 		h.assert_eq[U32](first, 1)
 		h.assert_eq[U32](second, 2)
@@ -288,7 +293,7 @@ class iso _ReadSecondNode8 is UnitTest
 	fun name(): String => "parse/node/second/8"
 	fun apply(h: TestHelper) =>
 		let arr: Array[U8] val = [0x01; 0x02; 0x03; 0x04]
-		let undertest = Parser(arr)
+		let undertest = _UnderTest(h.env, arr)
 		(let first: U32, let second: U32) = undertest.read_node(1, 8)
 		h.assert_eq[U32](first, 3)
 		h.assert_eq[U32](second, 4)
@@ -297,7 +302,7 @@ class iso _ReadInitialNode16 is UnitTest
 	fun name(): String => "parse/node/initial/16"
 	fun apply(h: TestHelper) =>
 		let arr: Array[U8] val = [0x01; 0x02; 0x03; 0x04]
-		let undertest = Parser(arr)
+		let undertest = _UnderTest(h.env, arr)
 		(let first: U32, let second: U32) = undertest.read_node(0, 16)
 		h.assert_eq[U32](first, 258)
 		h.assert_eq[U32](second, 772)
@@ -306,7 +311,7 @@ class iso _ReadViaPointer is UnitTest
 	fun name(): String => "parse/field/pointer/string"
 	fun apply(h: TestHelper) =>
 		let arr: Array[U8] val = [0x20; 0x04; 0xFF; 0xFF; 0x41; 0x61]
-		let undertest = Parser(arr)
+		let undertest = _UnderTest(h.env, arr)
 		(let bytes_read: USize, let result: Field) = undertest.read_pointer(0, 0)
 		h.assert_eq[USize](bytes_read, 2)
 		let value: String = match result
@@ -318,7 +323,7 @@ class iso _RFindFound is UnitTest
 	fun name(): String => "parse/rfind/found"
 	fun apply(h: TestHelper) ? =>
 		let arr: Array[U8] val = [0x20; 0x04; 0xFF; 0xFF; 0x41; 0x61]
-		let undertest = Parser(arr)
+		let undertest = _UnderTest(h.env, arr)
 		let search: Array[U8] val = [0xFF; 0xFF]
 		let result = undertest.rfind(search)?
 		h.assert_eq[USize](2, result)
@@ -327,6 +332,6 @@ class iso _RFindNotFound is UnitTest
 	fun name(): String => "parse/rfind/not_found"
 	fun apply(h: TestHelper) =>
 		let arr: Array[U8] val = [0x20; 0x04; 0xFF; 0xFF; 0x41; 0x61]
-		let undertest = Parser(arr)
+		let undertest = _UnderTest(h.env, arr)
 		let search: Array[U8] val = [0xAA; 0xAA]
 		h.assert_error({() ? => undertest.rfind(search)? })

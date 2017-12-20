@@ -1,4 +1,5 @@
 use "collections"
+use "logger"
 
 type SimpleField is ( U16 | U32 | U64 | U128 | I32 | String | F32 | F64 )
 type Field is ( SimpleField | MmdbMap | MmdbArray )
@@ -21,10 +22,16 @@ class val MmdbArray
 class val Parser
 	let data: Array[U8] val
 
-	new create(data': Array[U8] val) =>
+	let _log: (None | Logger[String])
+
+	new create(data': Array[U8] val, logger': (None | Logger[String]) = None) =>
+		_log = logger'
 		data = data'
 
 	fun read_unsigned[T: (_Shiftable[T] & Integer[T] & Unsigned val)](offset: USize): (USize, T) =>
+		match _log
+			| let l: Logger[String] => l(Fine) and l.log("Reading unsigned from offset " + offset.string())
+		end
 		try
 			let initial: U8 = data(offset)?
 			var result: T = T.from[U8](0)
@@ -43,10 +50,16 @@ class val Parser
 			end
 			(metadata_bytes + length, result)
 		else
+			match _log
+				| let l: Logger[String] => l(Error) and l.log("Unable to read offset " + offset.string() + " total data length: " + data.size().string())
+			end
 			(0, T.from[U8](0))
 		end
 
 	fun read_pointer(offset: USize, data_offset: USize): (USize, Field) =>
+		match _log
+			| let l: Logger[String] => l(Fine) and l.log("Reading pointer from offset " + offset.string())
+		end
 	try
 		let size: U8 = (data(offset)? and 0b00011000) >> 3
 		let value: U32 = (data(offset)? and 0b00000111).u32()
@@ -86,6 +99,9 @@ class val Parser
 		true
 
 	fun read_node(node_id: U32, record_size: U16): (U32, U32) =>
+		match _log
+			| let l: Logger[String] => l(Fine) and l.log("Reading node at " + node_id.string() + " with record size of " + record_size.string())
+		end
 		let bytes = (record_size/8).u32()
 		let base_offset: USize = (node_id.usize() * bytes.usize() * 2)
 		// read node 1 size 8, from 16 and 1 bytes
@@ -107,6 +123,9 @@ class val Parser
 
 
 	fun read_string(offset: USize): (USize, String val) =>
+		match _log
+			| let l: Logger[String] => l(Fine) and l.log("Reading string from offset " + offset.string())
+		end
 		try
 			let initial: U8 = data(offset)?
 			let length: USize = _length(offset)
@@ -120,6 +139,9 @@ class val Parser
 		end
 
 	fun read_array(offset: USize, data_section_offset: USize): (USize, MmdbArray) =>
+		match _log
+			| let l: Logger[String] => l(Fine) and l.log("Reading array from offset " + offset.string())
+		end
 		var byte_count: USize = 0
 		let result: Array[Field] val = recover val
 			let entry_count = _length(offset)
@@ -137,6 +159,9 @@ class val Parser
 		(byte_count, MmdbArray(result))
 
 	fun read_map(offset: USize, data_section_offset: USize): (USize, MmdbMap) =>
+		match _log
+			| let l: Logger[String] => l(Fine) and l.log("Reading map from offset " + offset.string())
+		end
 		var byte_count: USize = 0
 		let result: Map[String val, Field val] val = recover val
 			let entry_count = _length(offset)

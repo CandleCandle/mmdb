@@ -1,4 +1,4 @@
-
+use "logger"
 
 
 class val Reader
@@ -8,11 +8,17 @@ class val Reader
 	let data_section_offset: USize
 	let metadata_start_offset: USize
 
-	new create(parser': Parser)? =>
+	let _log: (None | Logger[String])
+
+	new create(parser': Parser, logger': (None | Logger[String]) = None)? =>
 		// partial when the database does not have the required metadata.
+		_log = logger'
 		parser = parser'
 		let marker: Array[U8] val = [0xAB; 0xCD; 0xEF; 0x4D; 0x61; 0x78; 0x4D; 0x69; 0x6E; 0x64; 0x2E; 0x63; 0x6F; 0x6D]
 		metadata_start_offset = parser.rfind(marker)? + marker.size()
+		match _log
+			| let l: Logger[String] => l(Fine) and l.log("Found metadata start at " + metadata_start_offset.string())
+		end
 		let metadata: MmdbMap = parser.read_map(metadata_start_offset, 0)._2
 		node_count = match metadata.data("node_count")?
 			| let u: U32 => u
