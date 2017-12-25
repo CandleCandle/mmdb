@@ -6,24 +6,6 @@ type SimpleField is ( U16 | U32 | U64 | U128 | I32 | String | F32 | F64 )
 type Field is ( SimpleField | MmdbMap | MmdbArray )
 // pointer, byte array, data cache container, boolean
 
-class IntIter[T: (Integer[T] & Unsigned val)] is Iterator[T]
-	var iter: T
-	let finish: T
-	let increment: T
-
-	new create(f: T, s: T = T.from[U8](0), inc: T = T.from[U8](1)) =>
-		finish = f
-		iter = s
-		increment = inc
-
-	fun has_next(): Bool =>
-		iter <= finish
-
-	fun ref next(): T =>
-		let result: T = iter
-		iter = iter + increment
-		result
-
 interface _Shiftable[T]
 	fun shl(y: T): T
 	fun shr(y: T): T
