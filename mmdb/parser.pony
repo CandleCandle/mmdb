@@ -1,9 +1,28 @@
 use "collections"
 use "logger"
+use "format"
 
 type SimpleField is ( U16 | U32 | U64 | U128 | I32 | String | F32 | F64 )
 type Field is ( SimpleField | MmdbMap | MmdbArray )
 // pointer, byte array, data cache container, boolean
+
+class IntIter[T: (Integer[T] & Unsigned val)] is Iterator[T]
+	var iter: T
+	let finish: T
+	let increment: T
+
+	new create(f: T, s: T = T.from[U8](0), inc: T = T.from[U8](1)) =>
+		finish = f
+		iter = s
+		increment = inc
+
+	fun has_next(): Bool =>
+		iter <= finish
+
+	fun ref next(): T =>
+		let result: T = iter
+		iter = iter + increment
+		result
 
 interface _Shiftable[T]
 	fun shl(y: T): T
@@ -55,6 +74,15 @@ class val Parser
 			end
 			(0, T.from[U8](0))
 		end
+	
+	fun _read_into[T: (_Shiftable[T] & Integer[T] & Unsigned val)](offset: USize, length: USize): T =>
+		var result: T = T.from[U8](0)
+		for count in IntIter[USize](length-1) do
+			let data_byte: U8 = try data(offset + count)? else 0 end
+			result = (result << T.from[U8](8)) or T.from[U8](data_byte)
+		end
+		result
+
 
 	fun read_pointer(offset: USize, data_offset: USize): (USize, Field) =>
 		match _log
@@ -64,10 +92,10 @@ class val Parser
 		let size: U8 = (data(offset)? and 0b00011000) >> 3
 		let value: U32 = (data(offset)? and 0b00000111).u32()
 		(let bytes_read: USize, let pointed_offset: U32) = match size
-			| 0 => (2, (value << 8) or _read_record(offset+1, 1))
-			| 1 => (3, ((value << 16) or _read_record(offset+1, 2)) + 2048)
-			| 2 => (4, ((value << 24) or _read_record(offset+1, 3)) + 526336)
-			| 3 => (5, _read_record(offset+1, 4))
+			| 0 => (2, (value << 8) or _read_into[U32](offset+1, 1))
+			| 1 => (3, ((value << 16) or _read_into[U32](offset+1, 2)) + 2048)
+			| 2 => (4, ((value << 24) or _read_into[U32](offset+1, 3)) + 526336)
+			| 3 => (5, _read_into[U32](offset+1, 4))
 			else
 				(1, U32.from[U8](0))
 			end
@@ -105,25 +133,28 @@ class val Parser
 		match _log
 			| let l: Logger[String] => l(Fine) and l.log("Reading node at " + node_id.string() + " with record size of " + record_size.string())
 		end
-		let bytes = (record_size/8).u32()
-		let base_offset: USize = (node_id.usize() * bytes.usize() * 2)
-		// read node 1 size 8, from 16 and 1 bytes
-		(_read_record(base_offset, bytes), _read_record(base_offset + bytes.usize(), bytes))
+		let bytes = ((record_size * 2) /8).usize()
+		let start_offset: USize = (node_id.usize() * bytes.usize())
 
-	fun _read_record(offset: USize, bytes: U32): U32 =>
-		try
-			var result: U32 = 0
-			var count: U32 = 0
-			while count < bytes do
-				let data_byte: U8 = data(offset + count.usize())?
-				result = result or (data_byte.u32().shl(8*(bytes - 1 - count)))
-				count = count + 1
-			end
-			result
-		else
-			0
+		// read both records
+		let node = _read_into[U64](start_offset, bytes)
+		// if record size is 12, then bytes is 3, we need a mask of
+		// 0b1111_1111_1111_0000_0000_0000 for the first record
+		// 0b0000_0000_0000_1111_1111_1111 for the second record
+		// should do it using masks as we can't assume that the record_size
+		// is 24/28/32.
+		// there has to be a better way to get masks; perhaps starting with a U128?
+		var second_mask: U64 = 0
+		for c in IntIter[U16](where s=0, f=record_size-1) do
+			second_mask = (second_mask << 1) or 1
 		end
+		let first_mask: U64 = second_mask << record_size.u64()
 
+		// apply the masks and shift the first into the low $record_size bits
+		(
+			((node and first_mask) >> record_size.u64()).u32(),
+			(node and second_mask).u32()
+		)
 
 	fun read_string(offset: USize): (USize, String val) =>
 		match _log

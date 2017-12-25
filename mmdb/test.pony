@@ -71,9 +71,13 @@ actor Main is TestList
 		test(_ReadInitialNode8)
 		test(_ReadSecondNode8)
 		test(_ReadInitialNode16)
+		test(_ReadSecondNode28)
 		test(_ReadViaPointer)
 		test(_RFindFound)
 		test(_RFindNotFound)
+		test(_IntIteratorTest)
+		test(_IntIterator2Test)
+		test(_IntIterator3Test)
 
 class iso _UnsignedTests[T: (_Shiftable[T] & Integer[T] & Unsigned val)] is UnitTest
 	let _name: String val
@@ -307,6 +311,15 @@ class iso _ReadInitialNode16 is UnitTest
 		h.assert_eq[U32](first, 258)
 		h.assert_eq[U32](second, 772)
 
+class iso _ReadSecondNode28 is UnitTest
+	fun name(): String => "parse/node/second/28"
+	fun apply(h: TestHelper) =>
+		let arr: Array[U8] val = [0x00; 0x01; 0x02; 0x03; 0x04; 0x05; 0x06; 0x07; 0x08; 0x09; 0x0a; 0x0b; 0x0c; 0x0d]
+		let undertest = _UnderTest(h.env, arr)
+		(let first: U32, let second: U32) = undertest.read_node(1, 28)
+		h.assert_eq[U32](first, 7372944)    // 0x0708090
+		h.assert_eq[U32](second, 168496141) // 0xa0b0c0d
+
 class iso _ReadViaPointer is UnitTest
 	fun name(): String => "parse/field/pointer/string"
 	fun apply(h: TestHelper) =>
@@ -335,3 +348,60 @@ class iso _RFindNotFound is UnitTest
 		let undertest = _UnderTest(h.env, arr)
 		let search: Array[U8] val = [0xAA; 0xAA]
 		h.assert_error({() ? => undertest.rfind(search)? })
+
+
+class iso _IntIteratorTest is UnitTest
+	fun name(): String => "iterator/int/0/1/5"
+	fun apply(h: TestHelper) =>
+		let undertest = IntIter[U8](4)
+		var result: Array[U8] = Array[U8](5)
+		for i in undertest do
+			result.push(i)
+		end
+		let expected: Array[U8] = [0;1;2;3;4]
+		h.assert_eq[USize](expected.size(), result.size())
+		for (i, v) in expected.pairs() do
+			try
+				h.assert_eq[U8](v, result(i)?)
+			else
+				h.fail("failed at index " + i.string())
+			end
+		end
+
+class iso _IntIterator2Test is UnitTest
+	fun name(): String => "iterator/int/5/1/9"
+	fun apply(h: TestHelper) =>
+		let undertest = IntIter[U8](where s=5, f=9)
+		var result: Array[U8] = Array[U8](5)
+		for i in undertest do
+			result.push(i)
+		end
+		let expected: Array[U8] = [5;6;7;8;9]
+		h.assert_eq[USize](expected.size(), result.size())
+		for (i, v) in expected.pairs() do
+			try
+				h.assert_eq[U8](v, result(i)?)
+			else
+				h.fail("failed at index " + i.string())
+			end
+		end
+
+class iso _IntIterator3Test is UnitTest
+	fun name(): String => "iterator/int/0/2/6"
+	fun apply(h: TestHelper) =>
+		let undertest = IntIter[U8](where s=0, f=6, inc=2)
+		var result: Array[U8] = Array[U8](4)
+		for i in undertest do
+			result.push(i)
+		end
+		let expected: Array[U8] = [0;2;4;6]
+		h.assert_eq[USize](expected.size(), result.size())
+		for (i, v) in expected.pairs() do
+			try
+				h.assert_eq[U8](v, result(i)?)
+			else
+				h.fail("failed at index " + i.string())
+			end
+		end
+
+
