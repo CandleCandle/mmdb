@@ -36,7 +36,13 @@ class val Reader
 			let bit: Bool = (addr and mask) > 0 // true = bit is 1; false = bit is 0
 			var node: (U32, U32) = parser.read_node(current_node, record_size)
 			var next_node = if bit then node._2 else node._1 end
-//			@printf[None]("found node at %d: (%d, %d), applying %s, so using %d\n".cstring(), current_node, node._1, node._2, bit.string().cstring(), next_node)
+			match _log
+				| let l: Logger[String] => l(Fine) and l.log("found node at "
+						+ current_node.string()
+						+ ": (" + node._1.string() + ", " + node._2.string() + "), "
+						+ "applying " + bit.string()
+						+ ", so using " + next_node.string())
+			end
 			if next_node < node_count then
 				// pointer to the next node
 				current_node = next_node

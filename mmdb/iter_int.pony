@@ -7,7 +7,7 @@ class IntIter[T: (Integer[T] & Unsigned val)] is Iterator[T]
 ```pony
 actor Main
     new create(env: Env) =>
-        for c in IntIter[U8](4) do
+        for c in IntIter[U8](5) do
             env.out.write(c.string() + " ")
         end
 ```
@@ -25,9 +25,9 @@ actor Main
 ```
 	will print:
 ```
-4 6 8 10
+4 6 8
 ```
-	note that the `s` and `f` are inclusive.
+	note that `f` is exclusive.
 	"""
 	var iter: T
 	let finish: T
@@ -42,7 +42,7 @@ actor Main
 		increment = inc
 
 	fun has_next(): Bool =>
-		iter <= finish
+		iter < finish
 
 	fun ref next(): T =>
 		let result: T = iter

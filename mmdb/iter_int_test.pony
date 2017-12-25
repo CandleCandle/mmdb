@@ -7,11 +7,12 @@ actor IntIteratorTest is TestList
 		test(_IntIteratorTest)
 		test(_IntIterator2Test)
 		test(_IntIterator3Test)
+		test(_IntIteratorEmptyTest)
 
 class iso _IntIteratorTest is UnitTest
 	fun name(): String => "iterator/int/0/1/5"
 	fun apply(h: TestHelper) =>
-		let undertest = IntIter[U8](4)
+		let undertest = IntIter[U8](5)
 		var result: Array[U8] = Array[U8](5)
 		for i in undertest do
 			result.push(i)
@@ -29,7 +30,7 @@ class iso _IntIteratorTest is UnitTest
 class iso _IntIterator2Test is UnitTest
 	fun name(): String => "iterator/int/5/1/9"
 	fun apply(h: TestHelper) =>
-		let undertest = IntIter[U8](where s=5, f=9)
+		let undertest = IntIter[U8](where s=5, f=10)
 		var result: Array[U8] = Array[U8](5)
 		for i in undertest do
 			result.push(i)
@@ -47,12 +48,30 @@ class iso _IntIterator2Test is UnitTest
 class iso _IntIterator3Test is UnitTest
 	fun name(): String => "iterator/int/0/2/6"
 	fun apply(h: TestHelper) =>
-		let undertest = IntIter[U8](where s=0, f=6, inc=2)
+		let undertest = IntIter[U8](where s=0, f=8, inc=2)
 		var result: Array[U8] = Array[U8](4)
 		for i in undertest do
 			result.push(i)
 		end
 		let expected: Array[U8] = [0;2;4;6]
+		h.assert_eq[USize](expected.size(), result.size())
+		for (i, v) in expected.pairs() do
+			try
+				h.assert_eq[U8](v, result(i)?)
+			else
+				h.fail("failed at index " + i.string())
+			end
+		end
+
+class iso _IntIteratorEmptyTest is UnitTest
+	fun name(): String => "iterator/int/0/0/1"
+	fun apply(h: TestHelper) =>
+		let undertest = IntIter[U8](where s=0, f=0, inc=1)
+		var result: Array[U8] = Array[U8](0)
+		for i in undertest do
+			result.push(i)
+		end
+		let expected: Array[U8] = []
 		h.assert_eq[USize](expected.size(), result.size())
 		for (i, v) in expected.pairs() do
 			try

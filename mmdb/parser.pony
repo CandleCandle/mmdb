@@ -33,38 +33,21 @@ class val Parser
 		match _log
 			| let l: Logger[String] => l(Fine) and l.log("Reading unsigned from offset " + offset.string())
 		end
-		try
-			let initial: U8 = data(offset)?
-			var result: T = T.from[U8](0)
-			let length: USize = _length(offset)
-			let metadata_bytes = _metadata_bytes(offset)
-			if length == 0 then
-				return (1, T.from[U8](0))
-			end
-			var count: USize = 0
-			while count < length do
-				// -1: length-to-index
-				let shift: T = T.from[USize](8*(length - 1 - count))
-				let data_byte: U8 = data(offset + metadata_bytes + count)?
-				result = result or (T.from[U8](data_byte).shl(shift))
-				count = count + 1
-			end
-			(metadata_bytes + length, result)
-		else
-			match _log
-				| let l: Logger[String] => l(Error) and l.log("Unable to read offset " + offset.string() + " total data length: " + data.size().string())
-			end
-			(0, T.from[U8](0))
+		let length: USize = _length(offset)
+		let metadata_bytes = _metadata_bytes(offset)
+		if length == 0 then
+			return (metadata_bytes, T.from[U8](0))
 		end
-	
+		let result = _read_into[T](offset + metadata_bytes, length)
+		(metadata_bytes + length, result)
+
 	fun _read_into[T: (_Shiftable[T] & Integer[T] & Unsigned val)](offset: USize, length: USize): T =>
 		var result: T = T.from[U8](0)
-		for count in IntIter[USize](length-1) do
+		for count in IntIter[USize](length) do
 			let data_byte: U8 = try data(offset + count)? else 0 end
 			result = (result << T.from[U8](8)) or T.from[U8](data_byte)
 		end
 		result
-
 
 	fun read_pointer(offset: USize, data_offset: USize): (USize, Field) =>
 		match _log
@@ -127,7 +110,7 @@ class val Parser
 		// is 24/28/32.
 		// there has to be a better way to get masks; perhaps starting with a U128?
 		var second_mask: U64 = 0
-		for c in IntIter[U16](where s=0, f=record_size-1) do
+		for c in IntIter[U16](where s=0, f=record_size) do
 			second_mask = (second_mask << 1) or 1
 		end
 		let first_mask: U64 = second_mask << record_size.u64()
@@ -163,12 +146,10 @@ class val Parser
 			let entry_count = _length(offset)
 			byte_count = byte_count + _metadata_bytes(offset) + _length_bytes(offset)
 			var res = Array[Field](entry_count)
-			var counter: USize = 0
-			while counter < entry_count do
+			for counter in IntIter[USize](where f=entry_count) do
 				(let change: USize, let value: Field) = read_field(offset + byte_count, data_section_offset)
 				byte_count = byte_count + change
 				res.push(value)
-				counter = counter + 1
 			end
 			res
 		end
@@ -183,8 +164,7 @@ class val Parser
 			let entry_count = _length(offset)
 			byte_count = byte_count + _metadata_bytes(offset) + _length_bytes(offset)
 			var res = Map[String, Field](entry_count)
-			var counter: USize = 0
-			while counter < entry_count do
+			for counter in IntIter[USize](where f=entry_count) do
 				(let key_change: USize, let key': Field) = read_field(offset + byte_count, data_section_offset)
 				let key: String = match key'
 				| let s: String => s
@@ -194,7 +174,6 @@ class val Parser
 				byte_count = byte_count + value_change
 
 				res(key) = value
-				counter = counter + 1
 			end
 			res
 		end
