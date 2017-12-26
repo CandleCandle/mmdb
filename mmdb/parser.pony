@@ -38,8 +38,7 @@ class val Parser
 		if length == 0 then
 			return (metadata_bytes, T.from[U8](0))
 		end
-		let result = _read_into[T](offset + metadata_bytes, length)
-		(metadata_bytes + length, result)
+		(metadata_bytes + length, _read_into[T](offset + metadata_bytes, length))
 
 	fun _read_into[T: (_Shiftable[T] & Integer[T] & Unsigned val)](offset: USize, length: USize): T =>
 		var result: T = T.from[U8](0)
@@ -201,7 +200,9 @@ class val Parser
 		// | 12 => data cache container
 		// | 13 => end marker
 		else
-			@printf[None]("Type %s is not implemented at offset %d\n".cstring(), _get_type(offset).string().cstring(), offset)
+			match _log
+				| let l: Logger[String] => l(Error) and l.log("Type "+_get_type(offset).string()+" is not implemented at offset "+offset.string())
+			end
 			(0, U16.from[U8](0))
 		end
 
@@ -223,19 +224,11 @@ class val Parser
 			let initial: U8 = data(offset)?
 			var length = (initial and 0b00011111).usize()
 			let metadata_bytes = _metadata_bytes(offset)
-			// magic extension bytes.
+			// magic length extension bytes.
 			match length
-			| 29 => 29
-					+ data(offset + metadata_bytes)?.usize()
-			| 30 => 285
-					+ (    data(offset + metadata_bytes + 1)?.usize()
-						or data(offset + metadata_bytes    )?.usize().shl(8)
-					)
-			| 31 => 65821
-					+ (    data(offset + metadata_bytes + 2)?.usize()
-						or data(offset + metadata_bytes + 1)?.usize().shl(8)
-						or data(offset + metadata_bytes    )?.usize().shl(16)
-					)
+			| 29 => 29 + _read_into[USize](offset + metadata_bytes, 1)
+			| 30 => 285 + _read_into[USize](offset + metadata_bytes, 2)
+			| 31 => 65821 + _read_into[USize](offset + metadata_bytes, 3)
 			else
 				length
 			end
