@@ -311,10 +311,12 @@ class iso _ReadInitialNode16 is UnitTest
 class iso _ReadSecondNode28 is UnitTest
 	fun name(): String => "parse/node/second/28"
 	fun apply(h: TestHelper) =>
+		// | <------------- node --------------->|
+		// | 23 .. 0 | 27..24 | 27..24 | 23 .. 0 |
 		let arr: Array[U8] val = [0x00; 0x01; 0x02; 0x03; 0x04; 0x05; 0x06; 0x07; 0x08; 0x09; 0x0a; 0x0b; 0x0c; 0x0d]
 		let undertest = _UnderTest(h.env, arr)
 		(let first: U32, let second: U32) = undertest.read_node(1, 28)
-		h.assert_eq[U32](first, 7372944)    // 0x0708090
+		h.assert_eq[U32](first, 460809)    // 0x0070809
 		h.assert_eq[U32](second, 168496141) // 0xa0b0c0d
 
 class iso _ReadViaPointer is UnitTest

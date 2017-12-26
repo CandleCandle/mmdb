@@ -98,28 +98,33 @@ class val Parser
 		match _log
 			| let l: Logger[String] => l(Fine) and l.log("Reading node at " + node_id.string() + " with record size of " + record_size.string())
 		end
-		let bytes = ((record_size * 2) /8).usize()
+		let bytes = (record_size >> 2).usize() // divide by 4
 		let start_offset: USize = (node_id.usize() * bytes.usize())
 
-		// read both records
-		let node = _read_into[U64](start_offset, bytes)
-		// if record size is 12, then bytes is 3, we need a mask of
-		// 0b1111_1111_1111_0000_0000_0000 for the first record
-		// 0b0000_0000_0000_1111_1111_1111 for the second record
-		// should do it using masks as we can't assume that the record_size
-		// is 24/28/32.
-		// there has to be a better way to get masks; perhaps starting with a U128?
-		var second_mask: U64 = 0
-		for c in IntIter[U16](where s=0, f=record_size) do
-			second_mask = (second_mask << 1) or 1
+		// we should not assume that the record_size is 24/28/32.
+		// if record size is not a whole number of bytes, then the middle byte
+		// is split in two, and contains the four highest bits of the records.
+		// e.g. 12 bits per record
+		// | 7..0 | 11..8 | 11..8 | 7..0 |
+		var first: U32 = 0
+		var second: U32 = 0
+		if (bytes and 0x1) > 0 then // bytes is odd; need to split the middle byte
+			let middle = _read_into[U32](
+					start_offset + ((record_size and 0xFFF8) >> 3).usize(), // reduce the U16 to the closest multiple of 8.
+					1
+			)
+			first = ((middle and 0xF0) >> 4) << (record_size and 0xFFF8).u32()
+			second = (middle and 0x0F) << (record_size and 0xFFF8).u32()
 		end
-		let first_mask: U64 = second_mask << record_size.u64()
-
-		// apply the masks and shift the first into the low $record_size bits
-		(
-			((node and first_mask) >> record_size.u64()).u32(),
-			(node and second_mask).u32()
+		first = first or _read_into[U32](
+				start_offset,
+				(record_size >> 3).usize()
 		)
+		second = second or _read_into[U32](
+				start_offset + (record_size >> 3).usize() + (bytes and 0x1),
+				(record_size >> 3).usize()
+		)
+		(first, second)
 
 	fun read_string(offset: USize): (USize, String val) =>
 		match _log
