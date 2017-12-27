@@ -16,10 +16,10 @@ primitive Dump
 			write_indent(out, indent)
 			match v
 			| let mm: MmdbMap =>
-				out.print(k.string() + " => map: " + mm.data.size().string() + " element(s)")
+				out.print(k.string() + " => map: " + mm.data.size().string() + " element" + (if mm.data.size() == 1 then "" else "s" end))
 				dump(out, mm.data, indent + 1)
 			| let a: MmdbArray =>
-				out.print(k.string() + " => array: " + a.data.size().string() + " element(s)")
+				out.print(k.string() + " => array: " + a.data.size().string() + " element" + (if a.data.size() == 1 then "" else "s" end))
 				dump(out, a.data, indent + 1)
 			| let s: Stringable =>
 				out.print(k.string() + " => " + s.string())
