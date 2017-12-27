@@ -6,3 +6,4 @@ actor Main is TestList
 	fun tag tests(test: PonyTest) =>
 		IntIteratorTest.make().tests(test)
 		ParserTest.make().tests(test)
+		ReaderTest.make().tests(test)
