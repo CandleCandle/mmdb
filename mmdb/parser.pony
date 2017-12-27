@@ -39,6 +39,10 @@ class val Parser
 			return (metadata_bytes, T.from[U8](0))
 		end
 		(metadata_bytes + length, _read_into[T](offset + metadata_bytes, length))
+	
+	fun read_float(offset: USize): (USize, F64) =>
+		let r: (USize, U64) = read_unsigned[U64](offset)
+		(r._1, F64.from_bits(r._2))
 
 	fun _read_into[T: (_Shiftable[T] & Integer[T] & Unsigned val)](offset: USize, length: USize): T =>
 		var result: T = T.from[U8](0)
@@ -188,7 +192,7 @@ class val Parser
 		// | 0 marker for data type extension
 		| 1 => read_pointer(offset, data_section_offset)
 		| 2 => read_string(offset)
-		// | 3 => F64
+		| 3 => read_float(offset)
 		// | 4 => byte array
 		| 5 => read_unsigned[U16](offset)
 		| 6 => read_unsigned[U32](offset)

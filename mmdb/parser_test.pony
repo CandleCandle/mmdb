@@ -29,16 +29,16 @@ actor ParserTest is TestList
 	new create(env: Env) => PonyTest(env, this)
 	new make() => None
 	fun tag tests(test: PonyTest) =>
-		test(_UnsignedTests[U16]("parse/field/u16/0-byte", 0, 1, [0b10100000; 0x99]))
-		test(_UnsignedTests[U16]("parse/field/u16/1-byte", 42, 2, [0b10100001; 0x2A]))
-		test(_UnsignedTests[U16]("parse/field/u16/2-byte", 16962, 3, [0b10100010; 0x42; 0x42]))
-		test(_UnsignedTests[U32]("parse/field/u32/0-byte", 0, 1, [0b11000000; 0x99]))
-		test(_UnsignedTests[U32]("parse/field/u32/1-byte", 66, 2, [0b11000001; 0x42]))
-		test(_UnsignedTests[U32]("parse/field/u32/2-byte", 36878, 3, [0b11000010; 0x90; 0x0E]))
-		test(_UnsignedTests[U32]("parse/field/u32/3-byte", 8522552, 4, [0b11000011; 0x82; 0x0b; 0x38]))
-		test(_UnsignedTests[U32]("parse/field/u32/4-byte", 1563489448, 5, [0b11000100; 0x5d; 0x30; 0xf4; 0xa8]))
-		test(_UnsignedTests[U64]("parse/field/u64/1-byte", 55, 3, [0b00000001; 0b00000010; 0x37]))
-		test(_UnsignedTests[U128]("parse/field/u128/1-byte", 56, 3, [0b00000001; 0b00000011; 0x38]))
+		test(_UnsignedTests[U16]("parse/field/u16/0-byte", 0, 1, [0b101_00000; 0x99]))
+		test(_UnsignedTests[U16]("parse/field/u16/1-byte", 42, 2, [0b101_00001; 0x2A]))
+		test(_UnsignedTests[U16]("parse/field/u16/2-byte", 16962, 3, [0b101_00010; 0x42; 0x42]))
+		test(_UnsignedTests[U32]("parse/field/u32/0-byte", 0, 1, [0b110_00000; 0x99]))
+		test(_UnsignedTests[U32]("parse/field/u32/1-byte", 66, 2, [0b110_00001; 0x42]))
+		test(_UnsignedTests[U32]("parse/field/u32/2-byte", 36878, 3, [0b110_00010; 0x90; 0x0E]))
+		test(_UnsignedTests[U32]("parse/field/u32/3-byte", 8522552, 4, [0b110_00011; 0x82; 0x0b; 0x38]))
+		test(_UnsignedTests[U32]("parse/field/u32/4-byte", 1563489448, 5, [0b110_00100; 0x5d; 0x30; 0xf4; 0xa8]))
+		test(_UnsignedTests[U64]("parse/field/u64/1-byte", 55, 3, [0b000_00001; 0b000_00010; 0x37]))
+		test(_UnsignedTests[U128]("parse/field/u128/1-byte", 56, 3, [0b00000001; 0b000_00011; 0x38]))
 
 		test(_UTF8StringTests("parse/field/string/0-byte", "", [0b01000000]))
 		test(_UTF8StringTests("parse/field/string/1-byte", "a", [0b01000001; 0x61]))
@@ -75,6 +75,21 @@ actor ParserTest is TestList
 		test(_ReadViaPointer)
 		test(_RFindFound)
 		test(_RFindNotFound)
+		test(_F64Tests("parse/field/float/8-bytes", 53.0, [0b01101000; 0x40; 0x4A; 0x80; 0x00; 0x00; 0x00; 0x00; 0x00]))
+
+class iso _F64Tests is UnitTest
+	let _name: String val
+	let _input: Array[U8] val
+	let _result: F64
+	new iso create(name': String, result': F64, input': Array[U8] val) =>
+		_name = name'
+		_input = input'
+		_result = result'
+	fun name(): String => _name
+	fun apply(h: TestHelper) =>
+		let undertest = _UnderTest(h.env, _input)
+		h.assert_eq[USize](undertest.read_float(0)._1, 9)
+		h.assert_eq[F64](undertest.read_float(0)._2, _result)
 
 class iso _UnsignedTests[T: (_Shiftable[T] & Integer[T] & Unsigned val)] is UnitTest
 	let _name: String val
