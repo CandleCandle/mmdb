@@ -40,9 +40,13 @@ class val Parser
 		end
 		(metadata_bytes + length, _read_into[T](offset + metadata_bytes, length))
 	
-	fun read_float(offset: USize): (USize, F64) =>
+	fun read_float_64(offset: USize): (USize, F64) =>
 		let r: (USize, U64) = read_unsigned[U64](offset)
 		(r._1, F64.from_bits(r._2))
+
+	fun read_float_32(offset: USize): (USize, F32) =>
+		let r: (USize, U32) = read_unsigned[U32](offset)
+		(r._1, F32.from_bits(r._2))
 
 	fun _read_into[T: (_Shiftable[T] & Integer[T] & Unsigned val)](offset: USize, length: USize): T =>
 		var result: T = T.from[U8](0)
@@ -192,7 +196,7 @@ class val Parser
 		// | 0 marker for data type extension
 		| 1 => read_pointer(offset, data_section_offset)
 		| 2 => read_string(offset)
-		| 3 => read_float(offset)
+		| 3 => read_float_64(offset)
 		// | 4 => byte array
 		| 5 => read_unsigned[U16](offset)
 		| 6 => read_unsigned[U32](offset)
@@ -203,6 +207,8 @@ class val Parser
 		| 11 => read_array(offset, data_section_offset)
 		// | 12 => data cache container
 		// | 13 => end marker
+		// | 14 => boolean
+		| 15 => read_float_32(offset)
 		else
 			match _log
 				| let l: Logger[String] => l(Error) and l.log("Type "+_get_type(offset).string()+" is not implemented at offset "+offset.string())

@@ -76,6 +76,21 @@ actor ParserTest is TestList
 		test(_RFindFound)
 		test(_RFindNotFound)
 		test(_F64Tests("parse/field/float/8-bytes", 53.0, [0b01101000; 0x40; 0x4A; 0x80; 0x00; 0x00; 0x00; 0x00; 0x00]))
+		test(_F32Tests("parse/field/float/4-bytes", 4.2, [0b01100100; 0x40; 0x86; 0x66; 0x66]))
+
+class iso _F32Tests is UnitTest
+	let _name: String val
+	let _input: Array[U8] val
+	let _result: F32
+	new iso create(name': String, result': F32, input': Array[U8] val) =>
+		_name = name'
+		_input = input'
+		_result = result'
+	fun name(): String => _name
+	fun apply(h: TestHelper) =>
+		let undertest = _UnderTest(h.env, _input)
+		h.assert_eq[USize](undertest.read_float_32(0)._1, 5)
+		h.assert_eq[F32](undertest.read_float_32(0)._2, _result)
 
 class iso _F64Tests is UnitTest
 	let _name: String val
@@ -88,8 +103,8 @@ class iso _F64Tests is UnitTest
 	fun name(): String => _name
 	fun apply(h: TestHelper) =>
 		let undertest = _UnderTest(h.env, _input)
-		h.assert_eq[USize](undertest.read_float(0)._1, 9)
-		h.assert_eq[F64](undertest.read_float(0)._2, _result)
+		h.assert_eq[USize](undertest.read_float_64(0)._1, 9)
+		h.assert_eq[F64](undertest.read_float_64(0)._2, _result)
 
 class iso _UnsignedTests[T: (_Shiftable[T] & Integer[T] & Unsigned val)] is UnitTest
 	let _name: String val
