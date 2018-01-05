@@ -48,6 +48,10 @@ class val Parser
 		let r: (USize, U32) = read_unsigned[U32](offset)
 		(r._1, F32.from_bits(r._2))
 
+	fun read_signed_32(offset: USize): (USize, I32) =>
+		(let length: USize, let u: U32) = read_unsigned[U32](offset)
+		(length, -1)
+
 	fun _read_into[T: (_Shiftable[T] & Integer[T] & Unsigned val)](offset: USize, length: USize): T =>
 		var result: T = T.from[U8](0)
 		for count in IntIter[USize](length) do
@@ -201,7 +205,7 @@ class val Parser
 		| 5 => read_unsigned[U16](offset)
 		| 6 => read_unsigned[U32](offset)
 		| 7 => read_map(offset, data_section_offset)
-		// | 8 => I32
+		| 8 => read_signed_32(offset)
 		| 9 => read_unsigned[U64](offset)
 		| 10 => read_unsigned[U128](offset)
 		| 11 => read_array(offset, data_section_offset)

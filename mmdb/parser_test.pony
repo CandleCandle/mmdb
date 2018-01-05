@@ -77,6 +77,35 @@ actor ParserTest is TestList
 		test(_RFindNotFound)
 		test(_F64Tests("parse/field/float/8-bytes", 53.0, [0b01101000; 0x40; 0x4A; 0x80; 0x00; 0x00; 0x00; 0x00; 0x00]))
 		test(_F32Tests("parse/field/float/4-bytes", 4.2, [0b01100100; 0x40; 0x86; 0x66; 0x66]))
+		test(_SignedTests("parse/field/i32/1-byte/1", 1, 3, [0b000_00001; 0b0000001; 0x01]))
+		test(_SignedTests("parse/field/i32/1-byte/-1", -1, 3, [0b000_00001; 0b0000001; 0xFF]))
+		test(_SignedTests("parse/field/i32/1-byte/-128", -128, 3, [0b000_00001; 0b0000001; 0b1000_0000]))
+		test(_SignedTests("parse/field/i32/2-byte/-1", -1, 4, [0b000_00010; 0b0000001; 0xFF; 0xFF]))
+		test(_SignedTests("parse/field/i32/2-byte/128", 128, 4, [0b000_00010; 0b0000001; 0x00; 0b1000_0000]))
+		test(_SignedTests("parse/field/i32/2-byte/-2^15", -0x8000, 4, [0b000_00010; 0b0000001; 0b1000_0000; 0x00]))
+		test(_SignedTests("parse/field/i32/3-byte/-1", -1, 5, [0b000_00011; 0b0000001; 0xFF; 0xFF; 0xFF]))
+		test(_SignedTests("parse/field/i32/3-byte/2^15", 0x8000, 5, [0b000_00011; 0b0000001; 0x00; 0b1000_0000; 0x00]))
+		test(_SignedTests("parse/field/i32/3-byte/-2^23", -0x800000, 5, [0b000_00011; 0b0000001; 0b1000_0000; 0x00; 0x00]))
+		test(_SignedTests("parse/field/i32/4-byte/-1", -1, 6, [0b000_00100; 0b0000001; 0xFF; 0xFF; 0xFF; 0xFF]))
+		test(_SignedTests("parse/field/i32/4-byte/2^23", 0x800000, 6, [0b000_00100; 0b0000001; 0x00; 0b1000_0000; 0x00; 0x00]))
+		test(_SignedTests("parse/field/i32/4-byte/-2^31", -0x80000000, 6, [0b000_00100; 0b0000001; 0b1000_0000; 0x00; 0x00; 0x00]))
+
+class iso _SignedTests is UnitTest
+	let _name: String val
+	let _input: Array[U8] val
+	let _result: I32
+	let _length: USize
+	new iso create(name': String, result': I32, length': USize, input': Array[U8] val) =>
+		_name = name'
+		_input = input'
+		_result = result'
+		_length = length'
+	fun name(): String => _name
+	fun apply(h: TestHelper) =>
+		let undertest = _UnderTest(h.env, _input)
+		(let length: USize, let result: I32) = undertest.read_signed_32(0)
+		h.assert_eq[USize](_length, length)
+		h.assert_eq[I32](_result, result)
 
 class iso _F32Tests is UnitTest
 	let _name: String val
