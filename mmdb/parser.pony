@@ -20,6 +20,35 @@ class val MmdbArray
 	new val create(data': Array[Field val] val) =>
 		data = data'
 
+primitive _Masks
+	"""
+	rather than calculating bit-masks on-the-fly for every request,
+	pre-calculate them and store them as constants.
+	"""
+	fun negative_extension(bytes: U8): U32 =>
+		"""
+		when there are `bytes` bytes in the stored number, then the constant
+		is bit-wise OR'd with the stored number to extend the result to 32 bits
+		"""
+		match bytes
+		| 1 => 0xFF_FF_FF_00
+		| 2 => 0xFF_FF_00_00
+		| 3 => 0xFF_00_00_00
+		| 4 => 0x00_00_00_00
+		else 0 end
+	fun negative_bit_mask(bytes: U8): U32 =>
+		"""
+		when the bit-wise AND of the constant and the stored number is greater
+		than zero, then the resulting number is negative.
+		"""
+		match bytes
+		| 1 => 0x00_00_00_80
+		| 2 => 0x00_00_80_00
+		| 3 => 0x00_80_00_00
+		| 4 => 0x80_00_00_00
+		else 0 end
+
+
 class val Parser
 	let data: Array[U8] val
 
@@ -52,17 +81,11 @@ class val Parser
 		(let length: USize, var u: U32) = read_unsigned[U32](offset)
 		if u == 0 then return (length, u.i32()) end
 		let initial: U8 = try data(offset)? else 0 end
-		let length' = (initial and 0b00011111).u32()
-		let mask = 1 << (((length'-1) * 8) + 7) // 0b1000_0000 / 0b1000_0000_0000_0000
+		let length' = initial and 0b00011111
+		let negative_bit_mask = _Masks.negative_bit_mask(length')
 
-		let i = (if (u and mask) > 0 then
-				var b: U32 = 0
-				for p in IntIter[U32](length' << 3) do
-					b = b << 1
-					b = b or 1
-				end
-				b = not b
-				b or u
+		let i = (if (u and negative_bit_mask) > 0 then
+				u or _Masks.negative_extension(length')
 			else
 				u
 			end).i32()
@@ -212,6 +235,13 @@ class val Parser
 		(byte_count, MmdbMap(result))
 
 	fun read_field(offset: USize, data_section_offset: USize): (USize, Field) =>
+		"""
+		return a 2-tuple of:
+		1: the total number of bytes read in reading this field
+		2: the field result
+
+		delegates to the correct `read_*` function for the type of the field.
+		"""
 		match _get_type(offset)
 		// | 0 marker for data type extension
 		| 1 => read_pointer(offset, data_section_offset)
