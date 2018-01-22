@@ -1,10 +1,8 @@
 use "collections"
 use "logger"
-use "format"
 
 type SimpleField is ( U16 | U32 | U64 | U128 | I32 | String | F32 | F64 )
-type Field is ( SimpleField | MmdbMap | MmdbArray )
-// pointer, byte array, data cache container, boolean
+type Field is ( SimpleField | MmdbMap | MmdbArray ) // missing: byte array, data cache container, boolean
 
 interface _Shiftable[T]
 	fun shl(y: T): T
