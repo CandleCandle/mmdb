@@ -37,32 +37,32 @@ actor ParserTest is TestList
 		test(_UnsignedTests[U32]("parse/field/u32/2-byte", 36878, 3, [0b110_00010; 0x90; 0x0E]))
 		test(_UnsignedTests[U32]("parse/field/u32/3-byte", 8522552, 4, [0b110_00011; 0x82; 0x0b; 0x38]))
 		test(_UnsignedTests[U32]("parse/field/u32/4-byte", 1563489448, 5, [0b110_00100; 0x5d; 0x30; 0xf4; 0xa8]))
-		test(_UnsignedTests[U64]("parse/field/u64/1-byte", 55, 3, [0b000_00001; 0b000_00010; 0x37]))
-		test(_UnsignedTests[U128]("parse/field/u128/1-byte", 56, 3, [0b00000001; 0b000_00011; 0x38]))
+		test(_UnsignedTests[U64]("parse/field/u64/1-byte", 55, 3, [0b000_00001; 0b0000_0010; 0x37]))
+		test(_UnsignedTests[U128]("parse/field/u128/1-byte", 56, 3, [0b000_00001; 0b0000_0011; 0x38]))
 
-		test(_UTF8StringTests("parse/field/string/0-byte", "", [0b01000000]))
-		test(_UTF8StringTests("parse/field/string/1-byte", "a", [0b01000001; 0x61]))
-		test(_UTF8StringTests("parse/field/string/9-byte", "012345678", [0b01001001; 0x30; 0x31; 0x32; 0x33; 0x34; 0x35; 0x36; 0x37; 0x38]))
-		test(_MetadataBytes("parse/metadata/metadata/1-byte", 1, [0b01000001]))
-		test(_MetadataBytes("parse/metadata/metadata/2-byte", 2, [0b00000000; 0b00000011]))
-		test(_LengthBytes("parse/metadata/length/0-byte", 0, [0b01000000]))
-		test(_LengthBytes("parse/metadata/length/1-byte", 0, [0b01011000]))
-		test(_LengthBytes("parse/metadata/length/2-byte", 1, [0b01011101; 0b00000011]))
-		test(_LengthBytes("parse/metadata/length/3-byte", 2, [0b01011110; 0b00000011; 0b00000011]))
-		test(_LengthBytes("parse/metadata/length/4-byte", 3, [0b01011111; 0b00000011; 0b00000011; 0b00000011]))
-		test(_DataLength("parse/metadata/data length/0-byte", 0, [0b01000000]))
-		test(_DataLength("parse/metadata/data length/1-byte", 24, [0b01011000]))
-		test(_DataLength("parse/metadata/data length/2-byte", 32, [0b01011101; 0b00000011]))
-		test(_DataLength("parse/metadata/data length/3-byte", 1056, [0b01011110; 0b00000011; 0b00000011]))
-		test(_DataLength("parse/metadata/data length/4-byte", 263200, [0b01011111; 0b00000011; 0b00000011; 0b00000011]))
-		test(_UTF8StringTests("parse/field/string/42-byte", "0123456789abcdefghijABCDEFGHIJklmnopqrstKL", [0b01011101; 0b00001101; 0x30; 0x31; 0x32; 0x33; 0x34; 0x35; 0x36; 0x37; 0x38; 0x39; 0x61; 0x62; 0x63; 0x64; 0x65; 0x66; 0x67; 0x68; 0x69; 0x6a; 0x41; 0x42; 0x43; 0x44; 0x45; 0x46; 0x47; 0x48; 0x49; 0x4a; 0x6b; 0x6c; 0x6d; 0x6e; 0x6f; 0x70; 0x71; 0x72; 0x73; 0x74; 0x4b; 0x4c]))
+		test(_UTF8StringTests("parse/field/string/0-byte", "", [0b010_00000]))
+		test(_UTF8StringTests("parse/field/string/1-byte", "a", [0b010_00001; 0x61]))
+		test(_UTF8StringTests("parse/field/string/9-byte", "012345678", [0b010_01001; 0x30; 0x31; 0x32; 0x33; 0x34; 0x35; 0x36; 0x37; 0x38]))
+		test(_MetadataBytes("parse/metadata/metadata/1-byte", 1, [0b010_00001]))
+		test(_MetadataBytes("parse/metadata/metadata/2-byte", 2, [0b000_00000; 0b0000_0011]))
+		test(_LengthBytes("parse/metadata/length/0-byte", 0, [0b010_00000]))
+		test(_LengthBytes("parse/metadata/length/1-byte", 0, [0b010_11000]))
+		test(_LengthBytes("parse/metadata/length/2-byte", 1, [0b010_11101; 0b0000_0011]))
+		test(_LengthBytes("parse/metadata/length/3-byte", 2, [0b010_11110; 0b0000_0011; 0b0000_0011]))
+		test(_LengthBytes("parse/metadata/length/4-byte", 3, [0b010_11111; 0b0000_0011; 0b000_00011; 0b0000_0011]))
+		test(_DataLength("parse/metadata/data length/0-byte", 0, [0b010_00000]))
+		test(_DataLength("parse/metadata/data length/1-byte", 24, [0b010_11000]))
+		test(_DataLength("parse/metadata/data length/2-byte", 32, [0b010_11101; 0b0000_0011]))
+		test(_DataLength("parse/metadata/data length/3-byte", 1056, [0b010_11110; 0b0000_0011; 0b0000_0011]))
+		test(_DataLength("parse/metadata/data length/4-byte", 263200, [0b010_11111; 0b0000_0011; 0b0000_0011; 0b0000_0011]))
+		test(_UTF8StringTests("parse/field/string/42-byte", "0123456789abcdefghijABCDEFGHIJklmnopqrstKL", [0b010_11101; 0b0000_1101; 0x30; 0x31; 0x32; 0x33; 0x34; 0x35; 0x36; 0x37; 0x38; 0x39; 0x61; 0x62; 0x63; 0x64; 0x65; 0x66; 0x67; 0x68; 0x69; 0x6a; 0x41; 0x42; 0x43; 0x44; 0x45; 0x46; 0x47; 0x48; 0x49; 0x4a; 0x6b; 0x6c; 0x6d; 0x6e; 0x6f; 0x70; 0x71; 0x72; 0x73; 0x74; 0x4b; 0x4c]))
 		test(_MapZeroTest)
 		test(_MapOneTest)
 		test(_MapTwoTest)
 		test(_MapTwoMixedContentTest)
-		test(_DataType("parse/metadata/type/string", 2, [0b01000000]))
-		test(_DataType("parse/metadata/type/u16", 5, [0b10100000]))
-		test(_DataType("parse/metadata/type/u32", 6, [0b11000000]))
+		test(_DataType("parse/metadata/type/string", 2, [0b010_00000]))
+		test(_DataType("parse/metadata/type/u16", 5, [0b101_00000]))
+		test(_DataType("parse/metadata/type/u32", 6, [0b110_00000]))
 		test(_DataType("parse/metadata/type/i32", 8, [0b0; 0b1]))
 		test(_DataType("parse/metadata/type/u64", 9, [0b0; 0b10]))
 		test(_DataType("parse/metadata/type/u128", 10, [0b0; 0b11]))
@@ -75,20 +75,20 @@ actor ParserTest is TestList
 		test(_ReadViaPointer)
 		test(_RFindFound)
 		test(_RFindNotFound)
-		test(_F64Tests("parse/field/float/8-bytes", 53.0, [0b01101000; 0x40; 0x4A; 0x80; 0x00; 0x00; 0x00; 0x00; 0x00]))
-		test(_F32Tests("parse/field/float/4-bytes", 4.2, [0b01100100; 0x40; 0x86; 0x66; 0x66]))
-		test(_SignedTests("parse/field/i32/1-byte/1", 1, 3, [0b000_00001; 0b0000001; 0x01]))
-		test(_SignedTests("parse/field/i32/1-byte/-1", -1, 3, [0b000_00001; 0b0000001; 0xFF]))
-		test(_SignedTests("parse/field/i32/1-byte/-128", -128, 3, [0b000_00001; 0b0000001; 0b1000_0000]))
-		test(_SignedTests("parse/field/i32/2-byte/-1", -1, 4, [0b000_00010; 0b0000001; 0xFF; 0xFF]))
-		test(_SignedTests("parse/field/i32/2-byte/128", 128, 4, [0b000_00010; 0b0000001; 0x00; 0b1000_0000]))
-		test(_SignedTests("parse/field/i32/2-byte/-2^15", -0x8000, 4, [0b000_00010; 0b0000001; 0b1000_0000; 0x00]))
-		test(_SignedTests("parse/field/i32/3-byte/-1", -1, 5, [0b000_00011; 0b0000001; 0xFF; 0xFF; 0xFF]))
-		test(_SignedTests("parse/field/i32/3-byte/2^15", 0x8000, 5, [0b000_00011; 0b0000001; 0x00; 0b1000_0000; 0x00]))
-		test(_SignedTests("parse/field/i32/3-byte/-2^23", -0x800000, 5, [0b000_00011; 0b0000001; 0b1000_0000; 0x00; 0x00]))
-		test(_SignedTests("parse/field/i32/4-byte/-1", -1, 6, [0b000_00100; 0b0000001; 0xFF; 0xFF; 0xFF; 0xFF]))
-		test(_SignedTests("parse/field/i32/4-byte/2^23", 0x800000, 6, [0b000_00100; 0b0000001; 0x00; 0b1000_0000; 0x00; 0x00]))
-		test(_SignedTests("parse/field/i32/4-byte/-2^31", -0x80000000, 6, [0b000_00100; 0b0000001; 0b1000_0000; 0x00; 0x00; 0x00]))
+		test(_F64Tests("parse/field/float/8-bytes", 53.0, [0b011_01000; 0x40; 0x4A; 0x80; 0x00; 0x00; 0x00; 0x00; 0x00]))
+		test(_F32Tests("parse/field/float/4-bytes", 4.2, [0b011_00100; 0x40; 0x86; 0x66; 0x66]))
+		test(_SignedTests("parse/field/i32/1-byte/1", 1, 3, [0b000_00001; 0b0000_0001; 0x01]))
+		test(_SignedTests("parse/field/i32/1-byte/-1", -1, 3, [0b000_00001; 0b0000_0001; 0xFF]))
+		test(_SignedTests("parse/field/i32/1-byte/-128", -128, 3, [0b000_00001; 0b0000_0001; 0b1000_0000]))
+		test(_SignedTests("parse/field/i32/2-byte/-1", -1, 4, [0b000_00010; 0b0000_0001; 0xFF; 0xFF]))
+		test(_SignedTests("parse/field/i32/2-byte/128", 128, 4, [0b000_00010; 0b0000_0001; 0x00; 0b1000_0000]))
+		test(_SignedTests("parse/field/i32/2-byte/-2^15", -0x8000, 4, [0b000_00010; 0b0000_0001; 0b1000_0000; 0x00]))
+		test(_SignedTests("parse/field/i32/3-byte/-1", -1, 5, [0b000_00011; 0b0000_0001; 0xFF; 0xFF; 0xFF]))
+		test(_SignedTests("parse/field/i32/3-byte/2^15", 0x8000, 5, [0b000_00011; 0b0000_0001; 0x00; 0b1000_0000; 0x00]))
+		test(_SignedTests("parse/field/i32/3-byte/-2^23", -0x800000, 5, [0b000_00011; 0b0000_0001; 0b1000_0000; 0x00; 0x00]))
+		test(_SignedTests("parse/field/i32/4-byte/-1", -1, 6, [0b000_00100; 0b0000_0001; 0xFF; 0xFF; 0xFF; 0xFF]))
+		test(_SignedTests("parse/field/i32/4-byte/2^23", 0x800000, 6, [0b000_00100; 0b0000_0001; 0x00; 0b1000_0000; 0x00; 0x00]))
+		test(_SignedTests("parse/field/i32/4-byte/-2^31", -0x80000000, 6, [0b000_00100; 0b0000_0001; 0b1000_0000; 0x00; 0x00; 0x00]))
 
 class iso _SignedTests is UnitTest
 	let _name: String val
@@ -219,14 +219,14 @@ class iso _DataType is UnitTest
 class iso _MapZeroTest is UnitTest
 	fun name(): String => "parse/field/map/0-element"
 	fun apply(h: TestHelper) =>
-		let arr: Array[U8] val = [0b11100000]
+		let arr: Array[U8] val = [0b111_00000]
 		let undertest = _UnderTest(h.env, arr)
 		h.assert_eq[USize](undertest.read_map(0, 0)._2.data.size(), 0)
 
 class iso _MapOneTest is UnitTest
 	fun name(): String => "parse/field/map/1-element"
 	fun apply(h: TestHelper) =>
-		let arr: Array[U8] val = [0b11100001; 0b01000001; 0x61; 0b01000001; 0x62]
+		let arr: Array[U8] val = [0b111_00001; 0b010_00001; 0x61; 0b010_00001; 0x62]
 		let undertest = _UnderTest(h.env, arr)
 		let result: Map[String val, Field val] val = undertest.read_map(0, 0)._2.data
 		h.assert_eq[USize](result.size(), 1)
@@ -242,7 +242,7 @@ class iso _MapOneTest is UnitTest
 class iso _MapTwoTest is UnitTest
 	fun name(): String => "parse/field/map/2-element"
 	fun apply(h: TestHelper) =>
-		let arr: Array[U8] val = [0b11100010; 0b01000001; 0x61; 0b01000001; 0x62; 0b01000001; 0x62; 0b01000001; 0x63]
+		let arr: Array[U8] val = [0b111_00010; 0b010_00001; 0x61; 0b010_00001; 0x62; 0b010_00001; 0x62; 0b010_00001; 0x63]
 		let undertest = _UnderTest(h.env, arr)
 		let result: Map[String val, Field val] val = undertest.read_map(0, 0)._2.data
 		h.assert_eq[USize](result.size(), 2)
@@ -266,7 +266,7 @@ class iso _MapTwoTest is UnitTest
 class iso _MapTwoMixedContentTest is UnitTest
 	fun name(): String => "parse/field/map/2-element/mixed-content"
 	fun apply(h: TestHelper) =>
-		let arr: Array[U8] val = [0b11100010; 0b01000001; 0x61; 0b01000001; 0x62; 0b01000001; 0x62; 0b10100001; 0x2A]
+		let arr: Array[U8] val = [0b111_00010; 0b010_00001; 0x61; 0b010_00001; 0x62; 0b010_00001; 0x62; 0b101_00001; 0x2A]
 		let undertest = Parser(arr)
 		let result: Map[String val, Field val] val = undertest.read_map(0, 0)._2.data
 		h.assert_eq[USize](result.size(), 2)
@@ -290,7 +290,7 @@ class iso _MapTwoMixedContentTest is UnitTest
 class iso _MapWithinMapTest is UnitTest
 	fun name(): String => "parse/field/map/2-element/nested-map"
 	fun apply(h: TestHelper) =>
-		let arr: Array[U8] val = [0b11100010; 0b01000001; 0x61; 0b01000001; 0x62; 0b01000001; 0x62; 0b11100001; 0b01000001; 0x63; 0b10100001; 0x2A]
+		let arr: Array[U8] val = [0b111_00010; 0b010_00001; 0x61; 0b010_00001; 0x62; 0b010_00001; 0x62; 0b111_00001; 0b010_00001; 0x63; 0b101_00001; 0x2A]
 		let undertest = _UnderTest(h.env, arr)
 		(let len: USize, let result': MmdbMap) = undertest.read_map(0, 0)
 		let result: Map[String val, Field val] val = result'.data
@@ -321,7 +321,7 @@ class iso _MapWithinMapTest is UnitTest
 class iso _ArrayWithMultipleElements is UnitTest
 	fun name(): String => "parse/field/array/multi-element"
 	fun apply(h: TestHelper) =>
-		let arr: Array[U8] val = [0b00001000; 0x04; 0x42; 0x64; 0x65; 0x42; 0x65; 0x6E; 0x42; 0x65; 0x73; 0x42; 0x66; 0x72; 0x42; 0x6A; 0x61; 0x45; 0x70; 0x74; 0x2D; 0x42; 0x52; 0x42; 0x72; 0x75; 0x45; 0x7A; 0x68; 0x2D; 0x43; 0x4E]
+		let arr: Array[U8] val = [0b000_01000; 0x04; 0x42; 0x64; 0x65; 0x42; 0x65; 0x6E; 0x42; 0x65; 0x73; 0x42; 0x66; 0x72; 0x42; 0x6A; 0x61; 0x45; 0x70; 0x74; 0x2D; 0x42; 0x52; 0x42; 0x72; 0x75; 0x45; 0x7A; 0x68; 0x2D; 0x43; 0x4E]
 		let undertest = _UnderTest(h.env, arr)
 		(let bytes_read: USize, let result': MmdbArray) = undertest.read_array(0, 0)
 		let result: Array[Field] val = result'.data
