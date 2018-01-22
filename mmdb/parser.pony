@@ -49,8 +49,32 @@ class val Parser
 		(r._1, F32.from_bits(r._2))
 
 	fun read_signed_32(offset: USize): (USize, I32) =>
-		(let length: USize, let u: U32) = read_unsigned[U32](offset)
-		(length, -1)
+		(let length: USize, var u: U32) = read_unsigned[U32](offset)
+		if u == 0 then return (length, u.i32()) end
+		let initial: U8 = try data(offset)? else 0 end
+		let length' = (initial and 0b00011111).u32()
+		let mask = 1 << (((length'-1) * 8) + 7) // 0b1000_0000 / 0b1000_0000_0000_0000
+		@printf[None](
+			"mask:   %s\nsource: %s\nnot m:  %s\nu+!m:   %s\nresult: %s\n".cstring(),
+			Format.int[U32](mask where width=34, fmt=FormatBinary).cstring(),
+			Format.int[U32](u where width=34, fmt=FormatBinary).cstring(),
+			Format.int[U32]((not mask) where width=34, fmt=FormatBinary).cstring(),
+			Format.int[U32]((u and (not mask)) where width=34, fmt=FormatBinary).cstring(),
+			Format.int[U32](0x80_00_00_00 or ((u and (not mask))) where width=34, fmt=FormatBinary).cstring()
+			)
+
+		let i = (if (u and mask) > 0 then
+				var b: U32 = 0
+				for p in IntIter[U32](length' << 3) do
+					b = b << 1
+					b = b or 1
+				end
+				b = not b
+				b or u
+			else
+				u
+			end).i32()
+		(length, i)
 
 	fun _read_into[T: (_Shiftable[T] & Integer[T] & Unsigned val)](offset: USize, length: USize): T =>
 		var result: T = T.from[U8](0)
