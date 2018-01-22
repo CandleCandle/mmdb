@@ -54,14 +54,6 @@ class val Parser
 		let initial: U8 = try data(offset)? else 0 end
 		let length' = (initial and 0b00011111).u32()
 		let mask = 1 << (((length'-1) * 8) + 7) // 0b1000_0000 / 0b1000_0000_0000_0000
-		@printf[None](
-			"mask:   %s\nsource: %s\nnot m:  %s\nu+!m:   %s\nresult: %s\n".cstring(),
-			Format.int[U32](mask where width=34, fmt=FormatBinary).cstring(),
-			Format.int[U32](u where width=34, fmt=FormatBinary).cstring(),
-			Format.int[U32]((not mask) where width=34, fmt=FormatBinary).cstring(),
-			Format.int[U32]((u and (not mask)) where width=34, fmt=FormatBinary).cstring(),
-			Format.int[U32](0x80_00_00_00 or ((u and (not mask))) where width=34, fmt=FormatBinary).cstring()
-			)
 
 		let i = (if (u and mask) > 0 then
 				var b: U32 = 0
