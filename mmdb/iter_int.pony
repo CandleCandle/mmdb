@@ -35,7 +35,7 @@ actor Main
 
 	new create(f: T, s: T = T.from[U8](0), inc: T = T.from[U8](1)) =>
 		"""
-		provide numbers from `s` to `f` inclusive with the step of `inc`
+		provide the range of integers [`s`, `f`)  with the step of `inc`
 		"""
 		finish = f
 		iter = s

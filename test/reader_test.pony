@@ -1,3 +1,4 @@
+use "../mmdb"
 use "ponytest"
 use "logger"
 
@@ -29,7 +30,7 @@ primitive _Metadata
 					((record_size >> 8) and 0xFF).u8()
 					(record_size and 0xFF).u8()
 		]
-//	fun pack[T: (_Shiftable[T] & Integer[T] & Unsigned val)](i: T): Array[U8] val =>
+//	fun pack[T: (Shiftable[T] & Integer[T] & Unsigned val)](i: T): Array[U8] val =>
 //		recover val
 //			var result: Array[U8]()
 //		end

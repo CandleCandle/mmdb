@@ -1,3 +1,4 @@
+use "../mmdb"
 use "collections"
 use "ponytest"
 use "format"
@@ -135,7 +136,7 @@ class iso _F64Tests is UnitTest
 		h.assert_eq[USize](undertest.read_float_64(0)._1, 9)
 		h.assert_eq[F64](undertest.read_float_64(0)._2, _result)
 
-class iso _UnsignedTests[T: (_Shiftable[T] & Integer[T] & Unsigned val)] is UnitTest
+class iso _UnsignedTests[T: (Shiftable[T] & Integer[T] & Unsigned val)] is UnitTest
 	let _name: String val
 	let _input: Array[U8] val
 	let _result: T
@@ -175,7 +176,7 @@ class iso _MetadataBytes is UnitTest
 	fun name(): String => _name
 	fun apply(h: TestHelper) =>
 		let undertest = _UnderTest(h.env, _input)
-		h.assert_eq[USize](undertest._metadata_bytes(0), _result)
+		h.assert_eq[USize](undertest.metadata_bytes(0), _result)
 
 class iso _LengthBytes is UnitTest
 	let _name: String val
@@ -188,7 +189,7 @@ class iso _LengthBytes is UnitTest
 	fun name(): String => _name
 	fun apply(h: TestHelper) =>
 		let undertest = _UnderTest(h.env, _input)
-		h.assert_eq[USize](undertest._length_bytes(0), _result)
+		h.assert_eq[USize](undertest.length_bytes(0), _result)
 
 class iso _DataLength is UnitTest
 	let _name: String val
@@ -201,7 +202,7 @@ class iso _DataLength is UnitTest
 	fun name(): String => _name
 	fun apply(h: TestHelper) =>
 		let undertest = _UnderTest(h.env, _input)
-		h.assert_eq[USize](undertest._length(0), _result)
+		h.assert_eq[USize](undertest.length(0), _result)
 
 class iso _DataType is UnitTest
 	let _name: String val
@@ -214,7 +215,7 @@ class iso _DataType is UnitTest
 	fun name(): String => _name
 	fun apply(h: TestHelper) =>
 		let undertest = _UnderTest(h.env, _input)
-		h.assert_eq[U16](undertest._get_type(0), _result)
+		h.assert_eq[U16](undertest.get_type(0), _result)
 
 class iso _MapZeroTest is UnitTest
 	fun name(): String => "parse/field/map/0-element"

@@ -4,7 +4,7 @@ use "logger"
 type SimpleField is ( U16 | U32 | U64 | U128 | I32 | String | F32 | F64 )
 type Field is ( SimpleField | MmdbMap | MmdbArray ) // missing: byte array, data cache container, boolean
 
-interface _Shiftable[T]
+interface Shiftable[T]
 	fun shl(y: T): T
 	fun shr(y: T): T
 
@@ -56,16 +56,16 @@ class val Parser
 		_log = logger'
 		data = data'
 
-	fun read_unsigned[T: (_Shiftable[T] & Integer[T] & Unsigned val)](offset: USize): (USize, T) =>
+	fun read_unsigned[T: (Shiftable[T] & Integer[T] & Unsigned val)](offset: USize): (USize, T) =>
 		match _log
 			| let l: Logger[String] => l(Fine) and l.log("Reading unsigned from offset " + offset.string())
 		end
-		let length: USize = _length(offset)
-		let metadata_bytes = _metadata_bytes(offset)
-		if length == 0 then
-			return (metadata_bytes, T.from[U8](0))
+		let length': USize = length(offset)
+		let metadata_bytes' = metadata_bytes(offset)
+		if length' == 0 then
+			return (metadata_bytes', T.from[U8](0))
 		end
-		(metadata_bytes + length, _read_into[T](offset + metadata_bytes, length))
+		(metadata_bytes' + length', _read_into[T](offset + metadata_bytes', length'))
 	
 	fun read_float_64(offset: USize): (USize, F64) =>
 		let r: (USize, U64) = read_unsigned[U64](offset)
@@ -76,22 +76,22 @@ class val Parser
 		(r._1, F32.from_bits(r._2))
 
 	fun read_signed_32(offset: USize): (USize, I32) =>
-		(let length: USize, var u: U32) = read_unsigned[U32](offset)
-		if u == 0 then return (length, u.i32()) end
+		(let length': USize, var u: U32) = read_unsigned[U32](offset)
+		if u == 0 then return (length', u.i32()) end
 		let initial: U8 = try data(offset)? else 0 end
-		let length' = initial and 0b00011111
-		let negative_bit_mask = _Masks.negative_bit_mask(length')
+		let length'' = initial and 0b00011111
+		let negative_bit_mask = _Masks.negative_bit_mask(length'')
 
 		let i = (if (u and negative_bit_mask) > 0 then
-				u or _Masks.negative_extension(length')
+				u or _Masks.negative_extension(length'')
 			else
 				u
 			end).i32()
-		(length, i)
+		(length', i)
 
-	fun _read_into[T: (_Shiftable[T] & Integer[T] & Unsigned val)](offset: USize, length: USize): T =>
+	fun _read_into[T: (Shiftable[T] & Integer[T] & Unsigned val)](offset: USize, length': USize): T =>
 		var result: T = T.from[U8](0)
-		for count in IntIter[USize](length) do
+		for count in IntIter[USize](length') do
 			let data_byte: U8 = try data(offset + count)? else 0 end
 			result = (result << T.from[U8](8)) or T.from[U8](data_byte)
 		end
@@ -180,11 +180,11 @@ class val Parser
 		end
 		try
 			let initial: U8 = data(offset)?
-			let length: USize = _length(offset)
-			let metadata_bytes = _metadata_bytes(offset)
-			let length_bytes = _length_bytes(offset)
-			let start = offset + metadata_bytes + length_bytes
-			let finish = start + length
+			let length': USize = length(offset)
+			let metadata_bytes' = metadata_bytes(offset)
+			let length_bytes' = length_bytes(offset)
+			let start = offset + metadata_bytes' + length_bytes'
+			let finish = start + length'
 			(finish - offset, String.from_array(recover val data.slice(start, finish) end))
 		else
 			(0, "")
@@ -196,8 +196,8 @@ class val Parser
 		end
 		var byte_count: USize = 0
 		let result: Array[Field] val = recover val
-			let entry_count = _length(offset)
-			byte_count = byte_count + _metadata_bytes(offset) + _length_bytes(offset)
+			let entry_count = length(offset)
+			byte_count = byte_count + metadata_bytes(offset) + length_bytes(offset)
 			var res = Array[Field](entry_count)
 			for counter in IntIter[USize](where f=entry_count) do
 				(let change: USize, let value: Field) = read_field(offset + byte_count, data_section_offset)
@@ -214,8 +214,8 @@ class val Parser
 		end
 		var byte_count: USize = 0
 		let result: Map[String val, Field val] val = recover val
-			let entry_count = _length(offset)
-			byte_count = byte_count + _metadata_bytes(offset) + _length_bytes(offset)
+			let entry_count = length(offset)
+			byte_count = byte_count + metadata_bytes(offset) + length_bytes(offset)
 			var res = Map[String, Field](entry_count)
 			for counter in IntIter[USize](where f=entry_count) do
 				(let key_change: USize, let key': Field) = read_field(offset + byte_count, data_section_offset)
@@ -240,7 +240,7 @@ class val Parser
 
 		delegates to the correct `read_*` function for the type of the field.
 		"""
-		match _get_type(offset)
+		match get_type(offset)
 		// | 0 marker for data type extension
 		| 1 => read_pointer(offset, data_section_offset)
 		| 2 => read_string(offset)
@@ -259,12 +259,12 @@ class val Parser
 		| 15 => read_float_32(offset)
 		else
 			match _log
-				| let l: Logger[String] => l(Error) and l.log("Type "+_get_type(offset).string()+" is not implemented at offset "+offset.string())
+				| let l: Logger[String] => l(Error) and l.log("Type "+get_type(offset).string()+" is not implemented at offset "+offset.string())
 			end
 			(0, U16.from[U8](0))
 		end
 
-	fun _get_type(offset: USize): U16 =>
+	fun get_type(offset: USize): U16 =>
 		try
 			let t: U8 = (data(offset)? and 0b11100000) >> 5
 			match t
@@ -277,24 +277,24 @@ class val Parser
 			0
 		end
 
-	fun _length(offset: USize): USize =>
+	fun length(offset: USize): USize =>
 		try
 			let initial: U8 = data(offset)?
-			var length = (initial and 0b00011111).usize()
-			let metadata_bytes = _metadata_bytes(offset)
+			var length' = (initial and 0b00011111).usize()
+			let metadata_bytes' = metadata_bytes(offset)
 			// magic length extension bytes.
-			match length
-			| 29 => 29 + _read_into[USize](offset + metadata_bytes, 1)
-			| 30 => 285 + _read_into[USize](offset + metadata_bytes, 2)
-			| 31 => 65821 + _read_into[USize](offset + metadata_bytes, 3)
+			match length'
+			| 29 => 29 + _read_into[USize](offset + metadata_bytes', 1)
+			| 30 => 285 + _read_into[USize](offset + metadata_bytes', 2)
+			| 31 => 65821 + _read_into[USize](offset + metadata_bytes', 3)
 			else
-				length
+				length'
 			end
 		else
 			0
 		end
 
-	fun _length_bytes(offset: USize): USize =>
+	fun length_bytes(offset: USize): USize =>
 		try
 			let initial: U8 = data(offset)?
 			match (initial and 0b00011111)
@@ -308,7 +308,7 @@ class val Parser
 			0
 		end
 
-	fun _metadata_bytes(offset: USize): USize =>
+	fun metadata_bytes(offset: USize): USize =>
 		try
 			let initial: U8 = data(offset)?
 			let t: U8 = initial and 0b11100000

@@ -1,3 +1,4 @@
+use "../mmdb"
 use "ponytest"
 
 actor IntIteratorTest is TestList
